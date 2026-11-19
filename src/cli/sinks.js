@@ -126,6 +126,9 @@ function addTuiBanner(tui, state) {
 }
 
 function createTuiSink(tui, state) {
+    // Maps provider tool-index -> { block, toolName } for streaming write preview
+    const streamWriteBlocks = new Map();
+
     return {
         isTui: true,
         interactive: true,
@@ -270,7 +273,7 @@ function createTuiSink(tui, state) {
                 },
             };
         },
-        startToolCall(label, { collapsible = true, expanded = false } = {}) {
+        startToolCall(label, { collapsible = true, expanded = false, toolIdx = null } = {}) {
             const isWrite = /write_file|edit_file|multi_edit|apply_patch/.test(label);
             const isRead = /read_file|glob_files|grep_files/.test(label);
             const block = tui.addBlock("tool", label, {
@@ -281,6 +284,9 @@ function createTuiSink(tui, state) {
             });
             const details = [];
             let lastUpdateAt = 0;
+            if (toolIdx !== null && isWrite) {
+                streamWriteBlocks.set(toolIdx, { block, toolName: label });
+            }
 
             return {
                 block,
@@ -289,6 +295,26 @@ function createTuiSink(tui, state) {
                  * Populates block.writeStats so the TUI can animate and show live stats.
                  */
                 startWrite({ filePath = "", content = "" } = {}) {
+                    // If streaming already pre-populated writeStats, just update totals with
+                    // the final known values and keep the live previewLines.
+                    if (block.writeStats) {
+                        const ws = block.writeStats;
+                        const lines = String(content || "").split(/\r?\n/);
+                        ws.filePath = String(filePath || ws.filePath || "");
+                        ws.dir =
+                            ws.dir ||
+                            (filePath ? filePath.replace(/\\/g, "/").split("/").slice(0, -1).join("/") || "." : "");
+                        ws.totalLines = lines.length;
+                        ws.totalChars = content.length;
+                        // Use streaming preview if it has content, else fall back to final content
+                        if (!ws.previewLines.length) {
+                            ws.previewLines = lines.filter((l) => l.trim()).slice(-5);
+                        }
+                        block._ver = (block._ver || 0) + 1;
+                        block._cache = null;
+                        tui.scheduleRender();
+                        return;
+                    }
                     const lines = String(content || "").split(/\r?\n/);
                     const dir = filePath ? filePath.replace(/\\/g, "/").split("/").slice(0, -1).join("/") || "." : "";
                     block.writeStats = {
@@ -353,6 +379,72 @@ function createTuiSink(tui, state) {
                     tui.setBlockDetails(block, [...details], summaryLine);
                 },
             };
+        },
+        /**
+         * Called by providers.js for each chunk of content/replacement argument while the LLM streams.
+         * Updates the write block's previewLines live so the TUI shows a rolling 5-line preview.
+         * @param {number} toolIdx - provider's toolMap index
+         * @param {string} toolName - e.g. "write_file"
+         * @param {string} filePath - destination file path
+         * @param {string} rawChunk - raw JSON-escaped content chunk from the LLM stream
+         */
+        onWriteStreamChunk(toolIdx, toolName, filePath, rawChunk) {
+            let entry = streamWriteBlocks.get(toolIdx);
+            // If no block yet (startToolCall not called yet), create a temporary tracking entry
+            if (!entry) {
+                // We'll update it when startToolCall registers the block
+                // Store raw chunk buffer for later
+                const pending = streamWriteBlocks.get(`pending-${toolIdx}`) || { chunks: [], path: filePath, toolName };
+                pending.chunks.push(rawChunk);
+                streamWriteBlocks.set(`pending-${toolIdx}`, pending);
+                return;
+            }
+            const { block } = entry;
+            if (!block.writeStats) {
+                // startWrite hasn't been called yet — initialise writeStats now
+                block.writeStats = {
+                    filePath: filePath || "",
+                    dir: filePath ? filePath.replace(/\\/g, "/").split("/").slice(0, -1).join("/") || "." : "",
+                    totalLines: 0,
+                    totalChars: 0,
+                    startTime: Date.now(),
+                    previewLines: [],
+                    done: false,
+                };
+            }
+            const ws = block.writeStats;
+            if (ws.done) return;
+
+            // JSON-unescape the raw chunk to get real characters
+            let decoded;
+            try {
+                // Wrap in quotes and parse as JSON string to unescape \n, \t, \\ etc.
+                decoded = JSON.parse('"' + rawChunk.replace(/"/g, '\\"') + '"');
+            } catch {
+                decoded = rawChunk;
+            }
+            ws.totalChars += decoded.length;
+            const newLines = decoded.split(/\r?\n/);
+            // Merge with last preview line if no newline at start
+            if (ws.previewLines.length > 0 && !decoded.startsWith("\n")) {
+                ws.previewLines[ws.previewLines.length - 1] += newLines[0];
+                for (let i = 1; i < newLines.length; i++) {
+                    if (newLines[i].trim()) ws.previewLines.push(newLines[i]);
+                }
+            } else {
+                for (const l of newLines) {
+                    if (l.trim()) ws.previewLines.push(l);
+                }
+            }
+            // Keep only last 5 non-blank preview lines
+            ws.previewLines = ws.previewLines.filter((l) => l.trim()).slice(-5);
+            ws.totalLines = Math.max(ws.totalLines, ws.previewLines.length);
+            // Count actual newlines for line count
+            const nlCount = (decoded.match(/\n/g) || []).length;
+            if (nlCount > 0) ws.totalLines += nlCount;
+            block._ver = (block._ver || 0) + 1;
+            block._cache = null;
+            tui.scheduleRender();
         },
     };
 }

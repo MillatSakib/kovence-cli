@@ -445,7 +445,7 @@ async function runToolCalls(state, toolCalls, sink) {
         const runOne = async () => {
             const toolUi =
                 name !== "download_file" && sink.startToolCall
-                    ? sink.startToolCall(`⚙ ${name}(${summary})`, { collapsible: true })
+                    ? sink.startToolCall(`⚙ ${name}(${summary})`, { collapsible: true, toolIdx: i })
                     : null;
             if (!toolUi && name !== "download_file") {
                 sink.log("tool", `⚙ ${name}(${summary})`);

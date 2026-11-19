@@ -369,6 +369,9 @@ async function streamProviderTurn({
     let finishReason = null;
     const toolMap = new Map();
     const isAnthropic = provider.type === "anthropic";
+    // Per-tool streaming write state: tracks whether we're inside the content/replacement JSON value.
+    // States: 'before' → looking for content key, 'in' → streaming content chars, 'done'
+    const writeStreamState = new Map(); // idx -> { state: 'before'|'in'|'done', pathBuf: '', inPath: bool }
 
     const markFirstToken = (forText) => {
         if (firstTokenAt === null) firstTokenAt = Date.now();
@@ -428,7 +431,59 @@ async function streamProviderTurn({
             const entry = toolMap.get(idx);
             if (d.id) entry.id = d.id;
             if (d.function?.name) entry.function.name += d.function.name;
-            if (d.function?.arguments) entry.function.arguments += d.function.arguments;
+            if (d.function?.arguments) {
+                entry.function.arguments += d.function.arguments;
+                pumpWriteChunk(idx, d.function.arguments);
+            }
+        }
+    };
+
+    /**
+     * Called with each raw argument delta chunk for a tool call.
+     * When the tool is write_file/edit_file, extracts the content/replacement
+     * value characters and pushes them to sink.onWriteStreamChunk() so the TUI
+     * can show a live 5-line rolling preview while the LLM is still generating.
+     */
+    const pumpWriteChunk = (idx, deltaChunk) => {
+        const entry = toolMap.get(idx);
+        if (!entry) return;
+        const tName = entry.function?.name || "";
+        if (!/write_file|edit_file|multi_edit/.test(tName)) return;
+
+        let st = writeStreamState.get(idx);
+        if (!st) {
+            st = { state: "before", pathBuf: "", buf: "" };
+            writeStreamState.set(idx, st);
+        }
+        if (st.state === "done") return;
+
+        st.buf += deltaChunk;
+
+        if (st.state === "before") {
+            // Extract file path once so sink knows where to write
+            if (!st.path) {
+                const pm = st.buf.match(/"path"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+                if (pm)
+                    st.path = pm[1]
+                        .replace(/\\n/g, "\n")
+                        .replace(/\\t/g, "\t")
+                        .replace(/\\\\/g, "\\")
+                        .replace(/\\"/g, '"');
+            }
+            // Look for content/replacement key start
+            const km = st.buf.match(/"(?:content|replacement)"\s*:\s*"/);
+            if (km) {
+                st.state = "in";
+                // Everything after the opening quote is content
+                const rest = st.buf.slice(km.index + km[0].length);
+                st.buf = rest; // keep only unprocessed part
+                if (rest.length > 0) {
+                    sink.onWriteStreamChunk?.(idx, tName, st.path || "", rest);
+                }
+            }
+        } else if (st.state === "in") {
+            // Push the raw delta chunk directly — it's content characters (JSON-escaped)
+            sink.onWriteStreamChunk?.(idx, tName, st.path || "", deltaChunk);
         }
     };
 
@@ -476,6 +531,7 @@ async function streamProviderTurn({
                     const idx = json.index ?? 0;
                     const entry = toolMap.get(idx);
                     if (entry) entry.function.arguments += json.delta.partial_json;
+                    pumpWriteChunk(idx, json.delta.partial_json);
                     updateToolProgress();
                 }
             }
