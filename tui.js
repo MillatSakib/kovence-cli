@@ -38,7 +38,7 @@ function styleInlineMarkdown(line, ansi) {
         .replace(/\*\*([^*]+)\*\*/g, `${ansi.bold}${ansi.amber}$1${ansi.reset}${ansi.white}`);
 }
 
-function formatAssistantLines(text, innerW, ansi) {
+function formatAssistantLines(text, innerW, ansi, isStreaming = false) {
     const out = [];
     const rawLines = String(text || "").split(/\r?\n/);
     let inCode = false;
@@ -74,6 +74,15 @@ function formatAssistantLines(text, innerW, ansi) {
             out.push(`  ${ansi.orange}┃ ${ansi.white}${styleInlineMarkdown(wl, ansi)}${ansi.reset}`);
         }
     }
+
+    if (isStreaming) {
+        if (inCode) {
+            out.push(`  ${ansi.gray}│ ${ansi.amber}${ansi.dim}writing... ▌${ansi.reset}`);
+        } else if (!text || text.endsWith("\n")) {
+            out.push(`  ${ansi.orange}┃ ${ansi.amber}${ansi.dim}writing... ▌${ansi.reset}`);
+        }
+    }
+
     return out;
 }
 
@@ -684,7 +693,7 @@ class KovenceTUI {
                         blockLines.push("");
                     } else if (b.kind === "assistant") {
                         blockLines.push(`  ${ansi.orange}${ansi.bold}◆ KOVENCE CLI${ansi.reset}`);
-                        blockLines.push(...formatAssistantLines(b.text, innerW, ansi));
+                        blockLines.push(...formatAssistantLines(b.text, innerW, ansi, Boolean(b._streaming)));
                     } else if (b.kind === "thinking") {
                         blockLines.push(`  ${ansi.orange}${ansi.bold}◆ KOVENCE CLI${ansi.reset}`);
                         for (const wl of wrapped) {
@@ -951,15 +960,17 @@ class KovenceTUI {
         for (let i = 0; i < visCompLines.length; i++) {
             const pfx = i === 0 && compStart === 0 ? promptPrefix : prefixSpace;
             const txt = visCompLines[i];
+            const isBusy = Boolean(this.status.isBusy || this.status.busyLabel);
+            const defaultPh = "Type message · Shift+Enter newline · / commands...";
+            const phText = isBusy && this.status.busyLabel ? `⏳ ${this.status.busyLabel}` : defaultPh;
             const showPh =
                 i === 0 &&
                 compStart === 0 &&
                 !this.modal &&
                 !this.input &&
                 this.status.showTips !== false &&
-                cols >= 2 + displayWidth(pfx) + 52;
-            const phText = "Type message · Shift+Enter newline · / commands...";
-            const placeholder = showPh ? `${ansi.gray}${phText}${ansi.reset}` : "";
+                cols >= 2 + displayWidth(pfx) + displayWidth(phText);
+            const placeholder = showPh ? `${isBusy ? ansi.amber : ansi.gray}${phText}${ansi.reset}` : "";
             const phLen = showPh ? displayWidth(phText) : 0;
             const linePlainLen = 2 + displayWidth(pfx) + displayWidth(txt);
             const padComposer = Math.max(0, cols - linePlainLen - phLen);

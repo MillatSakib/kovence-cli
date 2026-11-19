@@ -378,6 +378,40 @@ async function streamProviderTurn({
         }
     };
 
+    let lastProgressUpdate = 0;
+    const updateToolProgress = () => {
+        if (firstTokenAt === null) firstTokenAt = Date.now();
+        if (printedHeader) return;
+        const now = Date.now();
+        if (now - lastProgressUpdate < 80) return;
+        lastProgressUpdate = now;
+
+        const activeEntry = [...toolMap.values()].pop();
+        const toolName = activeEntry?.function?.name || "";
+        const args = activeEntry?.function?.arguments || "";
+        const isWrite = /write_file|edit_file|multi_edit|apply_patch/.test(toolName);
+
+        let target = "";
+        const m = args.match(/"(?:path|target|file)":\s*"([^"]+)"/);
+        if (m) {
+            const p = m[1];
+            target = p.length > 25 ? `...${p.slice(-22)}` : p;
+        }
+
+        const charCount = args.length;
+        const charSuffix = charCount > 100 ? ` (${Math.round(charCount / 100) / 10}k chars)` : "";
+
+        let label = "Writing code...";
+        if (isWrite) {
+            label = target ? `Writing ${target}${charSuffix}...` : `Writing code${charSuffix}...`;
+        } else if (toolName) {
+            label = target ? `${toolName}(${target})...` : `Preparing ${toolName}...`;
+        }
+
+        streamUi.setLabel?.(label);
+        sink.setBusy?.(label);
+    };
+
     const mergeOpenAITools = (deltas) => {
         for (const d of deltas) {
             const idx = d.index ?? 0;
@@ -423,23 +457,23 @@ async function streamProviderTurn({
                     };
                 }
             } else if (json.type === "content_block_start" && json.content_block?.type === "tool_use") {
-                markFirstToken(false);
                 const idx = json.index ?? toolMap.size;
                 toolMap.set(idx, {
                     id: json.content_block.id || `call_${idx}`,
                     type: "function",
                     function: { name: json.content_block.name || "", arguments: "" },
                 });
+                updateToolProgress();
             } else if (json.type === "content_block_delta") {
                 if (json.delta?.type === "text_delta" && json.delta.text) {
                     markFirstToken(true);
                     streamUi.write(json.delta.text);
                     fullText += json.delta.text;
                 } else if (json.delta?.type === "input_json_delta" && json.delta.partial_json) {
-                    markFirstToken(false);
                     const idx = json.index ?? 0;
                     const entry = toolMap.get(idx);
                     if (entry) entry.function.arguments += json.delta.partial_json;
+                    updateToolProgress();
                 }
             }
             return;
@@ -450,8 +484,8 @@ async function streamProviderTurn({
         if (choice?.finish_reason) finishReason = choice.finish_reason;
         const delta = choice?.delta;
         if (delta?.tool_calls?.length) {
-            markFirstToken(false);
             mergeOpenAITools(delta.tool_calls);
+            updateToolProgress();
         }
         const token = delta?.content ?? json.response ?? "";
         if (token) {

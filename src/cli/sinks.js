@@ -51,17 +51,21 @@ function createPlainSink(interactive, { headless = false, jsonMode = false } = {
             const dots = ["   ", ".  ", ".. ", "..."];
             let tick = 0;
             let stopped = false;
+            let currentLabel = label;
             const render = () => {
                 const symbol = frames[tick % frames.length];
                 const blink = dots[Math.floor(tick / 2) % dots.length];
                 process.stdout.write(
-                    `\r\x1b[K${C.cyan}${prefix}${C.reset}${C.yellow}${symbol} ${label}${blink}${C.reset}`
+                    `\r\x1b[K${C.cyan}${prefix}${C.reset}${C.yellow}${symbol} ${currentLabel}${blink}${C.reset}`
                 );
                 tick++;
             };
             render();
             const timer = setInterval(render, 100);
             return {
+                setLabel(newLabel) {
+                    if (newLabel) currentLabel = newLabel;
+                },
                 stop(keepPrefix = true) {
                     if (stopped) return;
                     stopped = true;
@@ -164,26 +168,35 @@ function createTuiSink(tui, state) {
                 process.stdout.write("\x07");
             }
         },
-        startThinking(_prefix = "Kovence: ", label = "Thinking") {
+        startThinking(_prefix = "Kovence: ", initialLabel = "Thinking") {
             const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
             const dots = ["   ", ".  ", ".. ", "..."];
             let tick = 0;
             let stopped = false;
-            const block = tui.addBlock("thinking", `⠋ ${label}   `);
+            let currentLabel = initialLabel;
+            const block = tui.addBlock("thinking", `⠋ ${currentLabel}   `);
             const timer = setInterval(() => {
                 tick++;
                 const symbol = frames[tick % frames.length];
                 const blink = dots[Math.floor(tick / 2) % dots.length];
-                tui.updateBlock(block, `${symbol} ${label}${blink}`);
+                tui.updateBlock(block, `${symbol} ${currentLabel}${blink}`);
             }, 100);
 
             return {
+                setLabel(newLabel) {
+                    if (stopped || !newLabel) return;
+                    currentLabel = newLabel;
+                    const symbol = frames[tick % frames.length];
+                    const blink = dots[Math.floor(tick / 2) % dots.length];
+                    tui.updateBlock(block, `${symbol} ${currentLabel}${blink}`);
+                },
                 stop(keepForStream = true) {
                     if (stopped) return;
                     stopped = true;
                     clearInterval(timer);
                     if (keepForStream) {
                         block.kind = "assistant";
+                        block._streaming = true;
                         tui.updateBlock(block, "");
                     } else {
                         const idx = tui.blocks.indexOf(block);
@@ -194,7 +207,13 @@ function createTuiSink(tui, state) {
                 write(tok) {
                     tui.appendBlock(block, tok);
                 },
-                end() {},
+                end() {
+                    if (block._streaming) {
+                        block._streaming = false;
+                        block._cache = null;
+                        tui.scheduleRender();
+                    }
+                },
             };
         },
         confirm: (label) => tui.askModal(label, false),
@@ -252,11 +271,12 @@ function createTuiSink(tui, state) {
             };
         },
         startToolCall(label, { collapsible = true, expanded = false } = {}) {
+            const isWrite = /write_file|edit_file|multi_edit|apply_patch/.test(label);
             const block = tui.addBlock("tool", label, {
                 collapsible,
                 expanded,
                 details: [],
-                statusLine: "running...",
+                statusLine: isWrite ? "writing..." : "running...",
             });
             const details = [];
             let lastUpdateAt = 0;

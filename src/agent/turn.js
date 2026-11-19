@@ -453,6 +453,11 @@ async function runToolCalls(state, toolCalls, sink) {
             if (name === "download_file") {
                 state.isDownloading = true;
                 sink.setBusy("Downloading (commands paused)...");
+            } else if (name === "write_file" || name === "edit_file" || name === "multi_edit") {
+                const target = parsedArgs.path ? parsedArgs.path.split("/").pop() : "";
+                sink.setBusy(`Writing ${target || "file"}...`);
+            } else {
+                sink.setBusy(`Running ${name}...`);
             }
             try {
                 const out = await executeTool(
