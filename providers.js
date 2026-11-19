@@ -390,6 +390,7 @@ async function streamProviderTurn({
         const toolName = activeEntry?.function?.name || "";
         const args = activeEntry?.function?.arguments || "";
         const isWrite = /write_file|edit_file|multi_edit|apply_patch/.test(toolName);
+        const isRead = /read_file|glob_files|grep_files|file_search|list_directory/.test(toolName);
 
         let target = "";
         const m = args.match(/"(?:path|target|file)":\s*"([^"]+)"/);
@@ -401,9 +402,11 @@ async function streamProviderTurn({
         const charCount = args.length;
         const charSuffix = charCount > 100 ? ` (${Math.round(charCount / 100) / 10}k chars)` : "";
 
-        let label = "Writing code...";
+        let label = "Thinking...";
         if (isWrite) {
             label = target ? `Writing ${target}${charSuffix}...` : `Writing code${charSuffix}...`;
+        } else if (isRead) {
+            label = target ? `Reading ${target}...` : `Reading codebase...`;
         } else if (toolName) {
             label = target ? `${toolName}(${target})...` : `Preparing ${toolName}...`;
         }

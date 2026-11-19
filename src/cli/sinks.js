@@ -272,11 +272,12 @@ function createTuiSink(tui, state) {
         },
         startToolCall(label, { collapsible = true, expanded = false } = {}) {
             const isWrite = /write_file|edit_file|multi_edit|apply_patch/.test(label);
+            const isRead = /read_file|glob_files|grep_files/.test(label);
             const block = tui.addBlock("tool", label, {
                 collapsible,
                 expanded,
                 details: [],
-                statusLine: isWrite ? "writing..." : "running...",
+                statusLine: isWrite ? "writing..." : isRead ? "reading..." : "running...",
             });
             const details = [];
             let lastUpdateAt = 0;
