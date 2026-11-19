@@ -19,8 +19,8 @@
         "node": ">=20.12.0"
     },
     "bin": {
-        "kovence-cli": "./nd.js",
-        "kovence": "./nd.js"
+        "kovence-cli": "nd.js",
+        "kovence": "nd.js"
     },
     "publishConfig": {
         "access": "public"
