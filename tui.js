@@ -270,6 +270,10 @@ class KovenceTUI {
         this.onKey = this.onKey.bind(this);
         this.onRawData = this.onRawData.bind(this);
         this.onResize = () => this.scheduleRender();
+
+        // Spinner/animation tick — increments every 150 ms while active.
+        this.animTick = 0;
+        this._animTimer = null;
     }
 
     getPalette() {
@@ -564,6 +568,23 @@ class KovenceTUI {
             this.stdin.on("data", this.onRawData);
         }
         this.stdout.on("resize", this.onResize);
+        // Start animation timer for spinner/dot animation.
+        this._animTimer = setInterval(() => {
+            this.animTick++;
+            // Only re-render if there is an active writing block.
+            const hasActive = this.blocks.some((b) => b.writeStats && !b.writeStats.done);
+            if (hasActive) {
+                // Invalidate cache for writing blocks so dots re-render.
+                for (const b of this.blocks) {
+                    if (b.writeStats && !b.writeStats.done) {
+                        b._ver = (b._ver || 0) + 1;
+                        b._cache = null;
+                    }
+                }
+                this.scheduleRender();
+            }
+        }, 150);
+        this._animTimer.unref?.();
         this.render();
     }
 
@@ -581,7 +602,11 @@ class KovenceTUI {
         if (this.stdin.isTTY) {
             try {
                 this.stdin.setRawMode(false);
-            } catch { }
+            } catch {}
+        }
+        if (this._animTimer) {
+            clearInterval(this._animTimer);
+            this._animTimer = null;
         }
         this.stdout.write(CONTROL_SEQ.keysOff + CONTROL_SEQ.mouseOff + CONTROL_SEQ.showCur + CONTROL_SEQ.altOff);
     }
@@ -739,8 +764,24 @@ class KovenceTUI {
                         }
                     } else if (b.kind === "tool") {
                         if (b.collapsible) {
+                            const ws = b.writeStats;
+                            const isActiveWrite = ws && !ws.done;
+
+                            // --- Animated write indicator dots ---
+                            // DOT_FRAMES cycles through 4 states every 150 ms (animTick steps each interval).
+                            const DOT_FRAMES = ["⠇", "⠋", "⠙", "⠸", "⠴", "⠦"];
+                            const dot = DOT_FRAMES[this.animTick % DOT_FRAMES.length];
+
                             const arrow = b.expanded ? "▾" : "▸";
-                            const hint = b.expanded ? " (click to hide)" : " (click for live details)";
+                            // For active writes, show expand toggle; for others, show generic hint.
+                            const hint = isActiveWrite
+                                ? b.expanded
+                                    ? " (click to collapse)"
+                                    : " ▸ expand for file preview"
+                                : b.expanded
+                                  ? " (click to hide)"
+                                  : " (click for live details)";
+
                             for (let i = 0; i < wrapped.length; i++) {
                                 const wl = wrapped[i];
                                 if (i === 0) {
@@ -752,7 +793,44 @@ class KovenceTUI {
                                 }
                             }
                             const detailW = Math.max(12, innerW - 6);
-                            if (b.expanded) {
+
+                            if (isActiveWrite) {
+                                // --- Stats line: animated dot + tokens approx + lines + speed ---
+                                const elapsedSec = Math.max(0.1, (Date.now() - ws.startTime) / 1000);
+                                // Rough token estimate: ~4 chars per token.
+                                const tokEst = Math.round(ws.totalChars / 4);
+                                const tokSec = Math.round(tokEst / elapsedSec);
+                                const statsLine = `${dot} ${ws.totalLines} lines · ~${tokEst} tokens · ${tokSec} tok/s`;
+                                blockLines.push(
+                                    `  ${ansi.gray}│    ${ansi.amber}${clipToWidth(statsLine, detailW)}${ansi.reset}`
+                                );
+
+                                if (b.expanded) {
+                                    // Dir line
+                                    if (ws.dir) {
+                                        const dirLine = `📁 ${ws.dir}/`;
+                                        blockLines.push(
+                                            `  ${ansi.gray}│    ${ansi.dim}${ansi.gray}${clipToWidth(dirLine, detailW)}${ansi.reset}`
+                                        );
+                                    }
+                                    // 5-line preview (auto-scroll: always last 5 non-blank lines)
+                                    const preview = (ws.previewLines || []).slice(-5);
+                                    if (preview.length) {
+                                        blockLines.push(
+                                            `  ${ansi.gray}│    ${ansi.dim}${ansi.gray}${"─".repeat(Math.min(detailW, 36))}${ansi.reset}`
+                                        );
+                                        for (const pl of preview) {
+                                            blockLines.push(
+                                                `  ${ansi.gray}│    ${ansi.dim}${ansi.gray}${clipToWidth(pl, detailW)}${ansi.reset}`
+                                            );
+                                        }
+                                    } else {
+                                        blockLines.push(
+                                            `  ${ansi.gray}│    ${ansi.dim}${ansi.gray}${clipToWidth("… preparing …", detailW)}${ansi.reset}`
+                                        );
+                                    }
+                                }
+                            } else if (b.expanded) {
                                 const visDetails = (b.details || []).slice(-16);
                                 if (!visDetails.length) {
                                     const emptyMsg = b.statusLine || "… waiting for live command output …";
@@ -897,8 +975,8 @@ class KovenceTUI {
         const bText = this.status.notice
             ? `${this.status.notice} `
             : this.status.busyLabel
-                ? `${this.status.busyLabel} `
-                : "";
+              ? `${this.status.busyLabel} `
+              : "";
         const rightPlain = `${qText}${bText}`;
         const maxLeftHdr = Math.max(12, cols - displayWidth(rightPlain) - 1);
         const rawLeftHdr = ` KOVENCE CLI · https://kovence.com · [${this.status.sessionId}]`;

@@ -456,6 +456,16 @@ async function runToolCalls(state, toolCalls, sink) {
             } else if (name === "write_file" || name === "edit_file" || name === "multi_edit") {
                 const target = parsedArgs.path ? parsedArgs.path.split("/").pop() : "";
                 sink.setBusy(`Writing ${target || "file"}...`);
+                // Populate write stats for the live TUI write indicator.
+                if (toolUi && toolUi.startWrite) {
+                    const writeContent =
+                        typeof parsedArgs.content === "string"
+                            ? parsedArgs.content
+                            : typeof parsedArgs.replacement === "string"
+                              ? parsedArgs.replacement
+                              : "";
+                    toolUi.startWrite({ filePath: parsedArgs.path || "", content: writeContent });
+                }
             } else if (name === "read_file" || name === "glob_files" || name === "grep_files") {
                 const target = parsedArgs.path ? parsedArgs.path.split("/").pop() : "";
                 sink.setBusy(`Reading ${target || "code"}...`);

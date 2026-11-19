@@ -284,6 +284,27 @@ function createTuiSink(tui, state) {
 
             return {
                 block,
+                /**
+                 * Called once at write start with { filePath, content }.
+                 * Populates block.writeStats so the TUI can animate and show live stats.
+                 */
+                startWrite({ filePath = "", content = "" } = {}) {
+                    const lines = String(content || "").split(/\r?\n/);
+                    const dir = filePath ? filePath.replace(/\\/g, "/").split("/").slice(0, -1).join("/") || "." : "";
+                    block.writeStats = {
+                        filePath: String(filePath || ""),
+                        dir: String(dir),
+                        totalLines: lines.length,
+                        totalChars: content.length,
+                        startTime: Date.now(),
+                        // 5-line rolling preview (last 5 non-blank lines)
+                        previewLines: lines.filter((l) => l.trim()).slice(-5),
+                        done: false,
+                    };
+                    block._ver = (block._ver || 0) + 1;
+                    block._cache = null;
+                    tui.scheduleRender();
+                },
                 pushOutput(rawChunk) {
                     const cleaned = String(rawChunk || "")
                         .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
@@ -316,6 +337,8 @@ function createTuiSink(tui, state) {
                     }
                 },
                 finish(fullOutputText = "", isError = false) {
+                    // Mark write as done so animation stops.
+                    if (block.writeStats) block.writeStats.done = true;
                     if (!details.length && fullOutputText) {
                         const fallbackLines = String(fullOutputText)
                             .split(/\r?\n/)
