@@ -172,6 +172,8 @@ function createTuiSink(tui, state) {
             }
         },
         startThinking(_prefix = "Kovence: ", initialLabel = "Thinking") {
+            // Clear per-turn write block registry so old indices don't bleed across turns.
+            streamWriteBlocks.clear();
             const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
             const dots = ["   ", ".  ", ".. ", "..."];
             let tick = 0;
@@ -450,13 +452,20 @@ function createTuiSink(tui, state) {
             const fname = filePath ? filePath.replace(/\\/g, "/").split("/").pop() : "file";
             const label = `⚙ ${toolName}(${fname})`;
             const dir = filePath ? filePath.replace(/\\/g, "/").split("/").slice(0, -1).join("/") || "." : "";
-            const block = tui.addBlock("tool", label, {
+
+            // Create the block but insert it AFTER the last thinking block so the
+            // "Thinking..." indicator stays at the bottom where the user expects it.
+            const rawBlock = {
+                kind: "tool",
+                text: label,
                 collapsible: true,
                 expanded: false,
                 details: [],
                 statusLine: "writing...",
-            });
-            block.writeStats = {
+                _ver: 1,
+                _cache: null,
+            };
+            rawBlock.writeStats = {
                 filePath: String(filePath || ""),
                 dir: String(dir),
                 totalLines: 0,
@@ -465,9 +474,16 @@ function createTuiSink(tui, state) {
                 previewLines: [],
                 done: false,
             };
-            streamWriteBlocks.set(toolIdx, { block, toolName, preRegistered: true });
-            block._ver = (block._ver || 0) + 1;
-            block._cache = null;
+            // Find last thinking block index to insert after it
+            let insertAt = tui.blocks.length;
+            for (let i = tui.blocks.length - 1; i >= 0; i--) {
+                if (tui.blocks[i].kind === "thinking") {
+                    insertAt = i + 1;
+                    break;
+                }
+            }
+            tui.blocks.splice(insertAt, 0, rawBlock);
+            streamWriteBlocks.set(toolIdx, { block: rawBlock, toolName, preRegistered: true });
             tui.scheduleRender();
         },
         /**
