@@ -12,7 +12,9 @@ const execFileAsync = promisify(execFile);
  * Parse a standard unified diff into per-file hunk structures.
  */
 function parseUnifiedDiff(patchText) {
-    const lines = String(patchText || "").replace(/\r\n/g, "\n").split("\n");
+    const lines = String(patchText || "")
+        .replace(/\r\n/g, "\n")
+        .split("\n");
     const files = [];
     let current = null;
     let currentHunk = null;
@@ -52,7 +54,13 @@ function parseUnifiedDiff(patchText) {
             current.hunks.push(currentHunk);
             continue;
         }
-        if (currentHunk && (line.startsWith(" ") || line.startsWith("+") || line.startsWith("-") || line === "\\ No newline at end of file")) {
+        if (
+            currentHunk &&
+            (line.startsWith(" ") ||
+                line.startsWith("+") ||
+                line.startsWith("-") ||
+                line === "\\ No newline at end of file")
+        ) {
             currentHunk.lines.push(line);
         }
     }
@@ -144,7 +152,12 @@ function applyUnifiedPatch({ patch, workspaceRoot, assertFileAccess, onBeforeMut
                     if (hl.startsWith("+")) addedLines.push(hl.slice(1));
                 }
             }
-            planned.push({ abs, rel: fp.targetPath, op: "write", nextContent: addedLines.join("\n") + (addedLines.length ? "\n" : "") });
+            planned.push({
+                abs,
+                rel: fp.targetPath,
+                op: "write",
+                nextContent: addedLines.join("\n") + (addedLines.length ? "\n" : ""),
+            });
         } else {
             if (!fs.existsSync(abs)) throw new Error(`Target file not found: ${fp.targetPath}`);
             const raw = fs.readFileSync(abs, "utf8");

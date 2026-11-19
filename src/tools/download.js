@@ -40,7 +40,10 @@ const DEFAULTS = {
 };
 
 class DownloadError extends Error {
-    constructor(message, { retryable = false, aborted = false, resetPart = false, retryAfterMs = 0, phase = "", code = "" } = {}) {
+    constructor(
+        message,
+        { retryable = false, aborted = false, resetPart = false, retryAfterMs = 0, phase = "", code = "" } = {}
+    ) {
         super(message);
         this.name = "DownloadError";
         this.retryable = retryable;
@@ -130,7 +133,8 @@ function requestOnce(parsed, { headers, family, connectTimeoutMs, signal }) {
             );
         }, connectTimeoutMs);
 
-        const onAbort = () => req.destroy(signal.reason || new DownloadError("Download aborted by user", { aborted: true }));
+        const onAbort = () =>
+            req.destroy(signal.reason || new DownloadError("Download aborted by user", { aborted: true }));
         if (signal?.aborted) onAbort();
         else signal?.addEventListener("abort", onAbort, { once: true });
 
@@ -284,7 +288,10 @@ async function downloadResumable(url, destPath, options = {}) {
                     state.totalBytes = total;
                     return { complete: true, size: existing, resumed: true };
                 }
-                throw new DownloadError("Partial file no longer matches server, restarting", { retryable: true, resetPart: true });
+                throw new DownloadError("Partial file no longer matches server, restarting", {
+                    retryable: true,
+                    resetPart: true,
+                });
             }
             if (status < 200 || status >= 300) {
                 res.resume();
@@ -292,7 +299,8 @@ async function downloadResumable(url, destPath, options = {}) {
                 const retryable = status === 408 || status === 425 || status === 429 || status >= 500;
                 throw new DownloadError(`HTTP ${status} ${res.statusMessage || ""}`.trim(), {
                     retryable,
-                    retryAfterMs: Number.isFinite(retryAfter) && retryAfter > 0 && retryAfter <= 60 ? retryAfter * 1000 : 0,
+                    retryAfterMs:
+                        Number.isFinite(retryAfter) && retryAfter > 0 && retryAfter <= 60 ? retryAfter * 1000 : 0,
                 });
             }
 
@@ -302,7 +310,10 @@ async function downloadResumable(url, destPath, options = {}) {
                 const m = /bytes (\d+)-(\d+)\/(\d+|\*)/.exec(String(res.headers["content-range"] || ""));
                 if (!m || Number(m[1]) !== existing) {
                     res.resume();
-                    throw new DownloadError("Server returned unexpected byte range, restarting", { retryable: true, resetPart: true });
+                    throw new DownloadError("Server returned unexpected byte range, restarting", {
+                        retryable: true,
+                        resetPart: true,
+                    });
                 }
                 resuming = true;
                 total = m[3] === "*" ? 0 : Number(m[3]);
@@ -315,7 +326,10 @@ async function downloadResumable(url, destPath, options = {}) {
             state.validator = String(res.headers.etag || res.headers["last-modified"] || state.validator || "");
             if (opts.maxBytes && total > opts.maxBytes) {
                 res.resume();
-                throw new DownloadError(`File is larger than the ${Math.round(opts.maxBytes / 1048576)} MB download limit`, { retryable: false });
+                throw new DownloadError(
+                    `File is larger than the ${Math.round(opts.maxBytes / 1048576)} MB download limit`,
+                    { retryable: false }
+                );
             }
             checkDiskSpace(path.dirname(destPath), total ? total - existing : 0);
 
@@ -351,10 +365,13 @@ async function downloadResumable(url, destPath, options = {}) {
                     clearIdle();
                     idleTimer = setTimeout(() => {
                         ctl.abort(
-                            new DownloadError(`Stalled: no data received for ${Math.round(opts.idleTimeoutMs / 1000)}s`, {
-                                retryable: true,
-                                code: "ETIMEDOUT",
-                            })
+                            new DownloadError(
+                                `Stalled: no data received for ${Math.round(opts.idleTimeoutMs / 1000)}s`,
+                                {
+                                    retryable: true,
+                                    code: "ETIMEDOUT",
+                                }
+                            )
                         );
                     }, opts.idleTimeoutMs);
                 };
@@ -366,7 +383,9 @@ async function downloadResumable(url, destPath, options = {}) {
                     bytes += chunk.length;
                     armIdle();
                     if (opts.maxBytes && bytes > opts.maxBytes) {
-                        ctl.abort(new DownloadError("Download exceeded the maximum allowed size", { retryable: false }));
+                        ctl.abort(
+                            new DownloadError("Download exceeded the maximum allowed size", { retryable: false })
+                        );
                         return;
                     }
                     emit(progressInfo(), false);
@@ -381,7 +400,9 @@ async function downloadResumable(url, destPath, options = {}) {
                         );
                     }
                 });
-                file.on("error", (err) => fail(new DownloadError(`Disk write failed: ${err.message}`, { retryable: false })));
+                file.on("error", (err) =>
+                    fail(new DownloadError(`Disk write failed: ${err.message}`, { retryable: false }))
+                );
                 file.on("finish", () => {
                     if (settled || !res.complete) return;
                     settled = true;
@@ -394,7 +415,10 @@ async function downloadResumable(url, destPath, options = {}) {
             await closeFile(file);
             const size = statSize(partPath);
             if (total > 0 && size !== total) {
-                throw new DownloadError(`Size mismatch: got ${size} of ${total} bytes`, { retryable: true, resetPart: size > total });
+                throw new DownloadError(`Size mismatch: got ${size} of ${total} bytes`, {
+                    retryable: true,
+                    resetPart: size > total,
+                });
             }
             emit({ ...progressInfo(), bytes: size, percent: 100 }, true);
             return { complete: true, size, resumed: resumedFrom > 0 };
@@ -432,7 +456,10 @@ async function downloadResumable(url, destPath, options = {}) {
 
             if (!isRetryable(err) || noProgressFailures >= opts.maxAttempts || totalTries >= opts.maxAttempts * 6) {
                 const keep = statSize(partPath);
-                const hint = keep > 0 ? ` Partial data (${(keep / 1048576).toFixed(2)} MB) kept at ${partPath}; call download_file again to resume.` : "";
+                const hint =
+                    keep > 0
+                        ? ` Partial data (${(keep / 1048576).toFixed(2)} MB) kept at ${partPath}; call download_file again to resume.`
+                        : "";
                 throw new DownloadError(`Download failed after ${totalTries} attempt(s): ${err.message}.${hint}`, {
                     retryable: false,
                     code: err.code,
@@ -442,7 +469,8 @@ async function downloadResumable(url, destPath, options = {}) {
             if (saved > 0) everResumed = true;
 
             const backoff = Math.min(15000, opts.retryBaseDelayMs * 2 ** Math.min(noProgressFailures, 4));
-            const delay = (err.retryAfterMs || backoff) + Math.floor(Math.random() * Math.min(250, opts.retryBaseDelayMs));
+            const delay =
+                (err.retryAfterMs || backoff) + Math.floor(Math.random() * Math.min(250, opts.retryBaseDelayMs));
             emit(
                 {
                     status: "retrying",
@@ -460,7 +488,9 @@ async function downloadResumable(url, destPath, options = {}) {
         const actual = await hashFile(partPath);
         if (actual.toLowerCase() !== String(sha256).trim().toLowerCase()) {
             fs.rmSync(partPath, { force: true });
-            throw new DownloadError(`SHA-256 mismatch: expected ${sha256}, got ${actual}. Corrupt file removed.`, { retryable: false });
+            throw new DownloadError(`SHA-256 mismatch: expected ${sha256}, got ${actual}. Corrupt file removed.`, {
+                retryable: false,
+            });
         }
     }
     moveFile(partPath, destPath);

@@ -1,12 +1,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
-const {
-    ensureStorageDirs,
-    readJsonSafe,
-    atomicWriteJson,
-    resolvePaths,
-} = require("../config/paths");
+const { ensureStorageDirs, readJsonSafe, atomicWriteJson, resolvePaths } = require("../config/paths");
 
 const VALID_ACTIONS = new Set(["allow", "deny", "ask"]);
 const VALID_SCOPES = new Set(["tool", "commandPrefix", "path", "domain"]);
@@ -59,10 +54,7 @@ function addPermissionRule(ruleInput, target = "project", paths = resolvePaths()
     if (!candidate) throw new Error("Invalid permission rule.");
     const existing = loadPermissionRules(target, paths);
     const idx = existing.findIndex(
-        (r) =>
-            r.tool === candidate.tool &&
-            r.scope === candidate.scope &&
-            r.pattern === candidate.pattern
+        (r) => r.tool === candidate.tool && r.scope === candidate.scope && r.pattern === candidate.pattern
     );
     if (idx >= 0) {
         existing[idx] = { ...candidate, id: existing[idx].id };

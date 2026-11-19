@@ -1,12 +1,7 @@
 "use strict";
 
 const readline = require("node:readline");
-const {
-    stripAnsi,
-    displayWidth,
-    prevGraphemeBoundary,
-    nextGraphemeBoundary,
-} = require("./src/tui/text_width");
+const { stripAnsi, displayWidth, prevGraphemeBoundary, nextGraphemeBoundary } = require("./src/tui/text_width");
 
 const useColor = process.stdout.isTTY && !(process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== "");
 const C = useColor

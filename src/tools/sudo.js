@@ -124,7 +124,9 @@ async function runWithSudo(command, { cwd, timeout, ctx, env, onData = null, cap
                 attempt === 0
                     ? `[sudo] password required (masked): `
                     : `[sudo] Password incorrect! Enter sudo password again (${attempt + 1}/${maxAttempts}): `;
-            ctx?.setBusy?.(attempt === 0 ? "Waiting for sudo password..." : "Password incorrect — waiting for retry...");
+            ctx?.setBusy?.(
+                attempt === 0 ? "Waiting for sudo password..." : "Password incorrect — waiting for retry..."
+            );
             pw = await ctx.askPassword(label);
             promptedNow = true;
             if (ctx?.signal?.aborted) return "Command aborted by user.";

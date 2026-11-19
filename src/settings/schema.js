@@ -72,7 +72,8 @@ const SETTINGS_SCHEMA = [
         key: "model",
         label: "Model",
         type: "string",
-        description: "Default saved model ID (precedence: CLI --model > session model > saved setting > provider default).",
+        description:
+            "Default saved model ID (precedence: CLI --model > session model > saved setting > provider default).",
     },
     {
         key: "provider",
@@ -137,7 +138,8 @@ const SETTINGS_SCHEMA = [
         label: "Verbosity",
         type: "enum",
         options: VERBOSITY_LEVELS,
-        description: "'low': minimal tool/status logs, 'normal': standard output, 'high': detailed diagnostics & audit trail.",
+        description:
+            "'low': minimal tool/status logs, 'normal': standard output, 'high': detailed diagnostics & audit trail.",
     },
     {
         key: "language",
@@ -158,7 +160,8 @@ const SETTINGS_SCHEMA = [
         label: "Queued Messages",
         type: "enum",
         options: QUEUED_MESSAGE_MODES,
-        description: "When sending a prompt mid-turn: 'queue' runs after active turn; 'interrupt' aborts current turn first.",
+        description:
+            "When sending a prompt mid-turn: 'queue' runs after active turn; 'interrupt' aborts current turn first.",
     },
     {
         key: "showTips",

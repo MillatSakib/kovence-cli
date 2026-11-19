@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {
     loadGlobalMemory,
+    saveGlobalMemory,
     addGlobalMemory,
     classifyMemoryIntent,
     saveSession,
@@ -56,7 +57,9 @@ function expandFileMentions(text, workspaceRoot = process.cwd()) {
                         .slice(lineStart - 1, lineEnd)
                         .map((ln, idx) => `${lineStart + idx}: ${ln}`)
                         .join("\n");
-                    attached.push(`--- File: ${rel} (Lines ${lineStart}-${Math.min(lineEnd, lines.length)}) ---\n${capOutput(slice)}`);
+                    attached.push(
+                        `--- File: ${rel} (Lines ${lineStart}-${Math.min(lineEnd, lines.length)}) ---\n${capOutput(slice)}`
+                    );
                 } else {
                     attached.push(`--- File: ${rel} ---\n${capOutput(rawText)}`);
                 }
@@ -108,7 +111,9 @@ function buildRequestMessages(state) {
         sessionBlocks.push(`[Session '${state.session.id}' Memory Summary]\n${state.session.summaryMemory}`);
     }
     if (state.session.pinnedMemory.length) {
-        sessionBlocks.push(`[Session '${state.session.id}' Pinned Local Facts]\n${state.session.pinnedMemory.map((x) => `- ${x}`).join("\n")}`);
+        sessionBlocks.push(
+            `[Session '${state.session.id}' Pinned Local Facts]\n${state.session.pinnedMemory.map((x) => `- ${x}`).join("\n")}`
+        );
     }
     if (state.session.todos.length) {
         const todoLines = state.session.todos.map((t, i) => `${i + 1}. [${t.status}] ${t.task}`).join("\n");
@@ -126,8 +131,14 @@ function buildRequestMessages(state) {
 }
 
 function formatEditDiffPreview(target = "", replacement = "") {
-    const tLines = String(target).split("\n").slice(0, 6).map((l) => `  - ${l}`);
-    const rLines = String(replacement).split("\n").slice(0, 6).map((l) => `  + ${l}`);
+    const tLines = String(target)
+        .split("\n")
+        .slice(0, 6)
+        .map((l) => `  - ${l}`);
+    const rLines = String(replacement)
+        .split("\n")
+        .slice(0, 6)
+        .map((l) => `  + ${l}`);
     const moreT = String(target).split("\n").length > 6 ? ["  - ..."] : [];
     const moreR = String(replacement).split("\n").length > 6 ? ["  + ..."] : [];
     return [...tLines, ...moreT, ...rLines, ...moreR].join("\n");
@@ -139,7 +150,7 @@ function formatEditDiffPreview(target = "", replacement = "") {
 function formatApprovalPreview(toolName, rawArgs, evalResult) {
     let args = {};
     try {
-        args = typeof rawArgs === "string" ? JSON.parse(rawArgs || "{}") : (rawArgs || {});
+        args = typeof rawArgs === "string" ? JSON.parse(rawArgs || "{}") : rawArgs || {};
     } catch {}
 
     const risk = evalResult?.risk || "MEDIUM";
@@ -259,8 +270,7 @@ async function runToolCalls(state, toolCalls, sink) {
     const workspaceRoot = state.workspaceRoot || process.cwd();
     const extraSecretEnvKeys = getProviderSecretEnvKeys(state);
 
-    const isAutoMode = () =>
-        state.settings.agentMode === "auto" || state.settings.toolPermission === "always-proceed";
+    const isAutoMode = () => state.settings.agentMode === "auto" || state.settings.toolPermission === "always-proceed";
 
     const makeCtx = (approvedByUser = false, skipDownloadDestPrompt = false, onToolOutput = null) => ({
         cwd: workspaceRoot,
@@ -325,7 +335,7 @@ async function runToolCalls(state, toolCalls, sink) {
             parsedArgs =
                 typeof tc.function.arguments === "string"
                     ? repairToolArguments(tc.function.arguments || "{}")
-                    : (tc.function.arguments || {});
+                    : tc.function.arguments || {};
         } catch {}
 
         const evalRes = evaluatePermission({
@@ -395,16 +405,25 @@ async function runToolCalls(state, toolCalls, sink) {
                             : defRule.rule;
                     if (lowerChoice === "s") {
                         state.sessionRules.push(picked);
-                        sink.log("meta", `✓ session rule added: ${picked.tool} (${picked.scope}: ${picked.pattern || "*"})`);
+                        sink.log(
+                            "meta",
+                            `✓ session rule added: ${picked.tool} (${picked.scope}: ${picked.pattern || "*"})`
+                        );
                     } else {
                         addPermissionRule(picked, "project", state.paths);
-                        sink.log("meta", `✓ project rule saved: ${picked.tool} (${picked.scope}: ${picked.pattern || "*"})`);
+                        sink.log(
+                            "meta",
+                            `✓ project rule saved: ${picked.tool} (${picked.scope}: ${picked.pattern || "*"})`
+                        );
                     }
                     skipDownloadDestPrompt = true;
                 }
             } else if ((lowerChoice === "s" || rawChoice === "A") && (evalRes.hardDenied || evalRes.requiresSudo)) {
                 approvedByUser = true;
-                sink.log("meta", "Note: hard-denylist/sudo commands are allowed once (cannot be permanently auto-allowed).");
+                sink.log(
+                    "meta",
+                    "Note: hard-denylist/sudo commands are allowed once (cannot be permanently auto-allowed)."
+                );
             } else {
                 results[i] = { role: "tool", tool_call_id: tc.id, name, content: "Denied by user." };
                 sink.log("tool", `✗ ${name}(${summary}) denied`);
@@ -503,9 +522,7 @@ async function runAgentTurn(state, userText, sink, options = {}) {
             const autoMode = state.settings.agentMode === "auto" || state.settings.toolPermission === "always-proceed";
             let allowSave = true;
             if (!memIntent.explicitCommand && !autoMode && sink.interactive && sink.confirm) {
-                const ans = (
-                    await sink.confirm(`Save to ${memIntent.scope} memory: "${memIntent.fact}"? [y/n]: `)
-                )
+                const ans = (await sink.confirm(`Save to ${memIntent.scope} memory: "${memIntent.fact}"? [y/n]: `))
                     .trim()
                     .toLowerCase();
                 allowSave = ans === "y" || ans === "yes";
@@ -513,10 +530,7 @@ async function runAgentTurn(state, userText, sink, options = {}) {
             if (allowSave) {
                 if (memIntent.scope === "global" && addGlobalMemory(memIntent.fact, "user", state.paths)) {
                     sink.log("meta", `🌐 Saved to Global Shared Memory`);
-                } else if (
-                    memIntent.scope === "session" &&
-                    !state.session.pinnedMemory.includes(memIntent.fact)
-                ) {
+                } else if (memIntent.scope === "session" && !state.session.pinnedMemory.includes(memIntent.fact)) {
                     state.session.pinnedMemory.push(memIntent.fact);
                     if (!state.noSession) saveSession(state.session, state.paths);
                     sink.log("meta", `📌 Saved to Session '${state.session.id}' local memory`);
@@ -527,7 +541,10 @@ async function runAgentTurn(state, userText, sink, options = {}) {
 
     const expanded = expandFileMentions(userText, workspaceRoot);
     if (!state.session.title && !options.isRetry) {
-        const cleanTitle = String(userText || "").replace(/\s+/g, " ").trim().slice(0, 60);
+        const cleanTitle = String(userText || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 60);
         if (cleanTitle) {
             state.session.title = cleanTitle;
             if (/^session-\d{8}-\d{6}-[a-z0-9]+$/i.test(state.session.id) && state.paths) {
@@ -542,7 +559,10 @@ async function runAgentTurn(state, userText, sink, options = {}) {
         }
     }
     if (state.debug) {
-        sink.log("meta", `[debug] turn start · model=${state.model} · mode=${state.settings.agentMode} · history=${state.session.history.length}`);
+        sink.log(
+            "meta",
+            `[debug] turn start · model=${state.model} · mode=${state.settings.agentMode} · history=${state.session.history.length}`
+        );
     }
     state.session.history.push({ role: "user", content: expanded });
     const toolsUsed = [];
@@ -597,7 +617,8 @@ async function runAgentTurn(state, userText, sink, options = {}) {
                     emptyRetried = true;
                     state.session.history.push({
                         role: "user",
-                        content: "You returned an empty response. Provide a helpful final answer or call an appropriate tool.",
+                        content:
+                            "You returned an empty response. Provide a helpful final answer or call an appropriate tool.",
                     });
                     continue;
                 }
@@ -611,8 +632,7 @@ async function runAgentTurn(state, userText, sink, options = {}) {
             if (!turn.toolCalls.length) {
                 finalAssistantText = turn.content;
                 const sec = (turn.elapsedMs / 1000).toFixed(2);
-                const ttftStr =
-                    turn.ttftMs >= 1000 ? `${(turn.ttftMs / 1000).toFixed(2)}s` : `${turn.ttftMs}ms`;
+                const ttftStr = turn.ttftMs >= 1000 ? `${(turn.ttftMs / 1000).toFixed(2)}s` : `${turn.ttftMs}ms`;
                 const speedStr = turn.tokPerSec ? ` · ${turn.tokPerSec} tok/s` : "";
                 const ctxStr = ` · Context: ~${turn.usage?.prompt_tokens || ctxEst} / ${ctxWin}`;
                 const usageStr = turn.usage
@@ -639,7 +659,8 @@ async function runAgentTurn(state, userText, sink, options = {}) {
                         sink.log("meta", "✓ Plan approved — switched to 'accept-edits' mode. Continuing...");
                         state.session.history.push({
                             role: "user",
-                            content: "Plan approved. Switched to accept-edits mode. Proceed with implementing the plan now.",
+                            content:
+                                "Plan approved. Switched to accept-edits mode. Proceed with implementing the plan now.",
                         });
                         continue;
                     }

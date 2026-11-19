@@ -126,7 +126,11 @@ const TOOL_DEFINITIONS = [
                 type: "object",
                 properties: {
                     path: { type: "string", description: "File path to edit." },
-                    target: { type: "string", description: "Exact existing text to replace (include surrounding context if needed for uniqueness)." },
+                    target: {
+                        type: "string",
+                        description:
+                            "Exact existing text to replace (include surrounding context if needed for uniqueness).",
+                    },
                     replacement: { type: "string", description: "Replacement text." },
                 },
                 required: ["path", "target", "replacement"],
@@ -176,13 +180,22 @@ const TOOL_DEFINITIONS = [
         type: "function",
         function: {
             name: "run_command",
-            description: "Execute a shell command in the current working directory. Supports sudo commands directly — Kovence automatically prompts the user for the sudo password interactively on demand. NEVER use wget/curl to download files; use download_file instead.",
+            description:
+                "Execute a shell command in the current working directory. Supports sudo commands directly — Kovence automatically prompts the user for the sudo password interactively on demand. NEVER use wget/curl to download files; use download_file instead.",
             parameters: {
                 type: "object",
                 properties: {
                     command: { type: "string", description: "Shell command to run." },
-                    timeout_ms: { type: "integer", description: "Timeout in ms (default 15000, max 60000; package installs/sudo get up to 5 minutes; wget/curl transfers get up to 30 minutes)." },
-                    background: { type: "boolean", description: "Run command detached in the background and return a task ID (use /tasks to inspect or stop)." },
+                    timeout_ms: {
+                        type: "integer",
+                        description:
+                            "Timeout in ms (default 15000, max 60000; package installs/sudo get up to 5 minutes; wget/curl transfers get up to 30 minutes).",
+                    },
+                    background: {
+                        type: "boolean",
+                        description:
+                            "Run command detached in the background and return a task ID (use /tasks to inspect or stop).",
+                    },
                 },
                 required: ["command"],
             },
@@ -206,13 +219,20 @@ const TOOL_DEFINITIONS = [
         type: "function",
         function: {
             name: "download_file",
-            description: "Reliable file downloader for HTTP/HTTPS: live progress bar, auto-resume after drops/stalls, retries with backoff, size and optional SHA-256 verification (prompts user: y=Downloads, c=custom path, n=cancel). Always prefer this over wget/curl. If it fails, calling it again resumes the partial file. Wait for it to complete before using the file in run_command.",
+            description:
+                "Reliable file downloader for HTTP/HTTPS: live progress bar, auto-resume after drops/stalls, retries with backoff, size and optional SHA-256 verification (prompts user: y=Downloads, c=custom path, n=cancel). Always prefer this over wget/curl. If it fails, calling it again resumes the partial file. Wait for it to complete before using the file in run_command.",
             parameters: {
                 type: "object",
                 properties: {
                     url: { type: "string", description: "Direct HTTP or HTTPS download URL." },
-                    filename: { type: "string", description: "Optional target filename (inferred from URL if omitted)." },
-                    sha256: { type: "string", description: "Optional expected SHA-256 hex digest to verify integrity." },
+                    filename: {
+                        type: "string",
+                        description: "Optional target filename (inferred from URL if omitted).",
+                    },
+                    sha256: {
+                        type: "string",
+                        description: "Optional expected SHA-256 hex digest to verify integrity.",
+                    },
                 },
                 required: ["url"],
             },
@@ -222,7 +242,8 @@ const TOOL_DEFINITIONS = [
         type: "function",
         function: {
             name: "web_search",
-            description: "Search the web via configured backend (Tavily, Brave, SearXNG, Google CSE, or DuckDuckGo) and return titles, URLs, and snippets.",
+            description:
+                "Search the web via configured backend (Tavily, Brave, SearXNG, Google CSE, or DuckDuckGo) and return titles, URLs, and snippets.",
             parameters: {
                 type: "object",
                 properties: {
@@ -290,11 +311,15 @@ const TOOL_DEFINITIONS = [
         type: "function",
         function: {
             name: "save_global_memory",
-            description: "Save an explicitly requested permanent user preference/rule into Global Shared Memory across sessions.",
+            description:
+                "Save an explicitly requested permanent user preference/rule into Global Shared Memory across sessions.",
             parameters: {
                 type: "object",
                 properties: {
-                    fact: { type: "string", description: "Concise permanent rule/preference explicitly requested by user." },
+                    fact: {
+                        type: "string",
+                        description: "Concise permanent rule/preference explicitly requested by user.",
+                    },
                 },
                 required: ["fact"],
             },
@@ -318,7 +343,8 @@ const TOOL_DEFINITIONS = [
         type: "function",
         function: {
             name: "apply_patch",
-            description: "Apply a unified diff patch across one or more workspace files atomically (automatically checkpointed for /undo).",
+            description:
+                "Apply a unified diff patch across one or more workspace files atomically (automatically checkpointed for /undo).",
             parameters: {
                 type: "object",
                 properties: {
@@ -396,7 +422,8 @@ const TOOL_DEFINITIONS = [
         type: "function",
         function: {
             name: "ask_user",
-            description: "Ask the user a clarifying question (with optional multiple-choice options) and wait for their answer.",
+            description:
+                "Ask the user a clarifying question (with optional multiple-choice options) and wait for their answer.",
             parameters: {
                 type: "object",
                 properties: {
@@ -559,9 +586,9 @@ function assertToolFileAccess(absPath, toolName, ctx) {
     const nonWs = ctx?.settings?.nonWorkspaceAccess || "ask";
     const isAuto = Boolean(
         ctx?.autoApprove ||
-            ctx?.approvedByUser ||
-            ctx?.settings?.agentMode === "auto" ||
-            ctx?.settings?.toolPermission === "always-proceed"
+        ctx?.approvedByUser ||
+        ctx?.settings?.agentMode === "auto" ||
+        ctx?.settings?.toolPermission === "always-proceed"
     );
     if (!isPathInsideWorkspace(absPath, workspaceRoot, ctx?.extraDirs || [])) {
         if (nonWs === "deny") {
@@ -716,7 +743,13 @@ const TOOL_HANDLERS = {
         const abs = resolvePath(filePath, root);
         assertToolFileAccess(abs, "write_file", ctx);
         const real = resolveRealWithMissingLeaf(abs);
-        if (ctx?.paths) recordCheckpoint({ sessionId: ctx.session?.id || "default", toolName: "write_file", filePaths: [real], paths: ctx.paths });
+        if (ctx?.paths)
+            recordCheckpoint({
+                sessionId: ctx.session?.id || "default",
+                toolName: "write_file",
+                filePaths: [real],
+                paths: ctx.paths,
+            });
         fs.mkdirSync(path.dirname(real), { recursive: true });
         fs.writeFileSync(real, content, "utf8");
         return `Wrote ${Buffer.byteLength(content, "utf8")} bytes to ${path.relative(root, real) || real}`;
@@ -734,8 +767,18 @@ const TOOL_HANDLERS = {
                 `Found ${count} occurrences of target in ${filePath}. Provide more surrounding context so target matches uniquely.`
             );
         }
-        if (ctx?.paths) recordCheckpoint({ sessionId: ctx.session?.id || "default", toolName: "edit_file", filePaths: [abs], paths: ctx.paths });
-        fs.writeFileSync(abs, current.replace(target, () => replacement), "utf8");
+        if (ctx?.paths)
+            recordCheckpoint({
+                sessionId: ctx.session?.id || "default",
+                toolName: "edit_file",
+                filePaths: [abs],
+                paths: ctx.paths,
+            });
+        fs.writeFileSync(
+            abs,
+            current.replace(target, () => replacement),
+            "utf8"
+        );
         return `Updated ${path.relative(root, abs) || abs}`;
     },
 
@@ -755,7 +798,13 @@ const TOOL_HANDLERS = {
             }
             current = current.replace(target, () => replacement);
         }
-        if (ctx?.paths) recordCheckpoint({ sessionId: ctx.session?.id || "default", toolName: "multi_edit", filePaths: [abs], paths: ctx.paths });
+        if (ctx?.paths)
+            recordCheckpoint({
+                sessionId: ctx.session?.id || "default",
+                toolName: "multi_edit",
+                filePaths: [abs],
+                paths: ctx.paths,
+            });
         fs.writeFileSync(abs, current, "utf8");
         return `Applied ${edits.length} edits to ${path.relative(root, abs) || abs}`;
     },
@@ -765,7 +814,13 @@ const TOOL_HANDLERS = {
         const abs = resolvePath(filePath, root);
         assertToolFileAccess(abs, "delete_file", ctx);
         if (!fs.existsSync(abs)) throw new Error(`File not found: ${filePath}`);
-        if (ctx?.paths) recordCheckpoint({ sessionId: ctx.session?.id || "default", toolName: "delete_file", filePaths: [abs], paths: ctx.paths });
+        if (ctx?.paths)
+            recordCheckpoint({
+                sessionId: ctx.session?.id || "default",
+                toolName: "delete_file",
+                filePaths: [abs],
+                paths: ctx.paths,
+            });
         fs.unlinkSync(abs);
         return `Deleted ${path.relative(root, abs) || abs}`;
     },
@@ -879,9 +934,10 @@ const TOOL_HANDLERS = {
         }
 
         const isLongTransfer = /^\s*(?:sudo\s+)?(?:wget|curl|aria2c)\b/.test(command) && /https?:\/\//i.test(command);
-        const isPackageOp = /\b(apt|apt-get|dpkg|snap|dnf|yum|pacman|npm\s+install|pnpm\s+install|yarn\s+install|pip3?\s+install)\b/i.test(
-            command
-        );
+        const isPackageOp =
+            /\b(apt|apt-get|dpkg|snap|dnf|yum|pacman|npm\s+install|pnpm\s+install|yarn\s+install|pip3?\s+install)\b/i.test(
+                command
+            );
         const timeout = isLongTransfer
             ? 30 * 60 * 1000
             : isPackageOp
@@ -989,16 +1045,18 @@ const TOOL_HANDLERS = {
 
         const autoSkipDestPrompt = Boolean(
             ctx?.autoApprove ||
-                ctx?.settings?.agentMode === "auto" ||
-                ctx?.settings?.toolPermission === "always-proceed" ||
-                ctx?.skipDownloadDestPrompt
+            ctx?.settings?.agentMode === "auto" ||
+            ctx?.settings?.toolPermission === "always-proceed" ||
+            ctx?.skipDownloadDestPrompt
         );
         if (!autoSkipDestPrompt) {
             if (!ctx?.askPrompt) {
                 return "Download cancelled: interactive confirmation required (or allow domain/auto mode).";
             }
             const choice = (
-                await ctx.askPrompt(`Download '${inferredName}' to '${destPath}'? [y=Downloads / c=custom / n=cancel]: `)
+                await ctx.askPrompt(
+                    `Download '${inferredName}' to '${destPath}'? [y=Downloads / c=custom / n=cancel]: `
+                )
             )
                 .trim()
                 .toLowerCase();
@@ -1103,7 +1161,10 @@ const TOOL_HANDLERS = {
 
     async save_session_memory({ fact }, ctx) {
         if (!ctx?.session) return "No active session.";
-        const clean = String(fact || "").replace(/\s+/g, " ").trim().slice(0, 300);
+        const clean = String(fact || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 300);
         if (!clean) return "Empty fact ignored.";
         const pinned = Array.isArray(ctx.session.pinnedMemory) ? ctx.session.pinnedMemory : [];
         if (pinned.some((x) => String(x).toLowerCase() === clean.toLowerCase())) {
@@ -1122,7 +1183,10 @@ const TOOL_HANDLERS = {
         if (!ctx?.addGlobalMemory && (!ctx?.loadGlobalMemory || !ctx?.saveGlobalMemory)) {
             return "Global memory unavailable.";
         }
-        const clean = String(fact || "").replace(/\s+/g, " ").trim().slice(0, 300);
+        const clean = String(fact || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 300);
         if (!clean) return "Empty fact ignored.";
         if (ctx.addGlobalMemory) {
             const added = ctx.addGlobalMemory(clean, "assistant");
@@ -1146,7 +1210,9 @@ const TOOL_HANDLERS = {
             const needle = String(fact).toLowerCase();
             updated = items.filter((item) => {
                 const txt = typeof item === "string" ? item : item.text;
-                return !String(txt || "").toLowerCase().includes(needle);
+                return !String(txt || "")
+                    .toLowerCase()
+                    .includes(needle);
             });
         }
         ctx.saveGlobalMemory(updated);
@@ -1162,7 +1228,7 @@ async function executeTool(name, rawArgs, ctx = {}) {
         throw new Error("Tool execution aborted.");
     }
 
-    const args = typeof rawArgs === "string" ? repairToolArguments(rawArgs || "{}") : (rawArgs || {});
+    const args = typeof rawArgs === "string" ? repairToolArguments(rawArgs || "{}") : rawArgs || {};
 
     // Code-level Plan Mode barrier (A2): cannot be bypassed even if invoked directly
     if (ctx?.settings?.agentMode === "plan") {

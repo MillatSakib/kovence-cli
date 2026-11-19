@@ -89,7 +89,10 @@ function generateProjectInitDoc(workspaceRoot = process.cwd()) {
             tech.push("Node.js");
         }
     }
-    if (fs.existsSync(path.join(workspaceRoot, "pyproject.toml")) || fs.existsSync(path.join(workspaceRoot, "requirements.txt"))) {
+    if (
+        fs.existsSync(path.join(workspaceRoot, "pyproject.toml")) ||
+        fs.existsSync(path.join(workspaceRoot, "requirements.txt"))
+    ) {
         tech.push("Python");
     }
     if (fs.existsSync(path.join(workspaceRoot, "Cargo.toml"))) tech.push("Rust");

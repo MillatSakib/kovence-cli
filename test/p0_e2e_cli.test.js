@@ -61,7 +61,10 @@ function createMockSseServer() {
                                             type: "function",
                                             function: {
                                                 name: "write_file",
-                                                arguments: JSON.stringify({ path: "should_not_exist.txt", content: "nope" }),
+                                                arguments: JSON.stringify({
+                                                    path: "should_not_exist.txt",
+                                                    content: "nope",
+                                                }),
                                             },
                                         },
                                     ],
@@ -75,7 +78,10 @@ function createMockSseServer() {
                 return;
             }
 
-            if (/TRIGGER_RETRY_FAIL/.test(lastUser) && requests.filter((r) => r.url.endsWith("/chat/completions")).length === 1) {
+            if (
+                /TRIGGER_RETRY_FAIL/.test(lastUser) &&
+                requests.filter((r) => r.url.endsWith("/chat/completions")).length === 1
+            ) {
                 res.writeHead(400, { "Content-Type": "application/json" });
                 res.end(JSON.stringify({ error: { message: "Mock bad request" } }));
                 return;

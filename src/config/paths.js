@@ -8,7 +8,11 @@ const path = require("node:path");
  * Sanitize an arbitrary identifier into a safe filename stem.
  */
 function safeId(name) {
-    return String(name || "default").trim().replace(/[^a-zA-Z0-9._-]/g, "_") || "default";
+    return (
+        String(name || "default")
+            .trim()
+            .replace(/[^a-zA-Z0-9._-]/g, "_") || "default"
+    );
 }
 
 /**
@@ -146,10 +150,7 @@ function migrateLegacyAiHarness(paths) {
     if (fs.existsSync(paths.migrationMarkerFile)) return { migrated: false, reason: "already-migrated" };
 
     const candidates = Array.from(
-        new Set([
-            path.join(paths.cwd, ".ai_harness"),
-            path.join(paths.projectRoot, ".ai_harness"),
-        ])
+        new Set([path.join(paths.cwd, ".ai_harness"), path.join(paths.projectRoot, ".ai_harness")])
     ).filter((dir) => fs.existsSync(dir) && fs.statSync(dir).isDirectory());
 
     if (candidates.length === 0) return { migrated: false, reason: "no-legacy-dir" };
@@ -188,7 +189,11 @@ function migrateLegacyAiHarness(paths) {
             const current = readJsonSafe(paths.globalMemoryFile, { items: [] });
             const existingItems = Array.isArray(current.items) ? current.items : [];
             const seen = new Set(
-                existingItems.map((x) => String(typeof x === "string" ? x : x?.text || "").trim().toLowerCase())
+                existingItems.map((x) =>
+                    String(typeof x === "string" ? x : x?.text || "")
+                        .trim()
+                        .toLowerCase()
+                )
             );
             let added = 0;
             for (const rawItem of legacyMem.items) {

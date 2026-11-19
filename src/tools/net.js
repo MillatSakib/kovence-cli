@@ -11,7 +11,8 @@ const zlib = require("node:zlib");
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
 const BROWSER_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "User-Agent":
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
@@ -32,7 +33,11 @@ const BROWSER_HEADERS = {
  * Determine whether an IPv4 or IPv6 address belongs to loopback, link-local, or private network space.
  */
 function isPrivateOrLocalIp(ip) {
-    const clean = String(ip || "").trim().replace(/^\[|\]$/g, "").split("%")[0].toLowerCase();
+    const clean = String(ip || "")
+        .trim()
+        .replace(/^\[|\]$/g, "")
+        .split("%")[0]
+        .toLowerCase();
     if (!clean) return true;
     if (clean.startsWith("::ffff:")) return isPrivateOrLocalIp(clean.slice(7));
 
@@ -428,10 +433,20 @@ async function runPluggableSearch(query, limit = 5, signal = null) {
         if (!linkMatch) continue;
         const snipMatch = block.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/(?:a|div|span)>/i);
         results.push({
-            title: decodeHtmlEntities(linkMatch[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()),
+            title: decodeHtmlEntities(
+                linkMatch[2]
+                    .replace(/<[^>]+>/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim()
+            ),
             url: unwrapDdgUrl(decodeHtmlEntities(linkMatch[1].replace(/<[^>]+>/g, "").trim())),
             snippet: snipMatch
-                ? decodeHtmlEntities(snipMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+                ? decodeHtmlEntities(
+                      snipMatch[1]
+                          .replace(/<[^>]+>/g, " ")
+                          .replace(/\s+/g, " ")
+                          .trim()
+                  )
                 : "",
         });
     }

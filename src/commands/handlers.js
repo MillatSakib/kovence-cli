@@ -106,9 +106,7 @@ function persistAndApplySetting(state, key, value, sink) {
             state.cliModel = "";
             const provModels = Array.isArray(state.provider.models) ? state.provider.models : [];
             const currentValid = state.model && provModels.includes(state.model);
-            const nextModel = currentValid
-                ? state.model
-                : state.provider.defaultModel || provModels[0] || state.model;
+            const nextModel = currentValid ? state.model : state.provider.defaultModel || provModels[0] || state.model;
             if (nextModel) {
                 state.model = nextModel;
                 if (state.session) {
@@ -185,7 +183,10 @@ function handlePermissionsCommand(state, arg, sink) {
     if (sub === "list") {
         const all = listCombinedRules(state.sessionRules, state.paths);
         if (!all.length) {
-            sink.log("system", "(No permission rules configured. Use /permissions allow|deny or approve with [s]/[A].)");
+            sink.log(
+                "system",
+                "(No permission rules configured. Use /permissions allow|deny or approve with [s]/[A].)"
+            );
             return;
         }
         const lines = all.map(
@@ -201,7 +202,10 @@ function handlePermissionsCommand(state, arg, sink) {
         const { scope, pattern } = inferPermissionScope(tool, rawPattern);
         const target = isGlobal ? "global" : "project";
         const saved = addPermissionRule({ action: sub, tool, scope, pattern }, target, state.paths);
-        sink.log("system", `Added ${target} ${saved.action} rule: ${saved.tool} (${saved.scope}: ${saved.pattern || "*"})`);
+        sink.log(
+            "system",
+            `Added ${target} ${saved.action} rule: ${saved.tool} (${saved.scope}: ${saved.pattern || "*"})`
+        );
         return;
     }
 
@@ -235,7 +239,10 @@ function handlePermissionsCommand(state, arg, sink) {
         return;
     }
 
-    sink.log("system", "Usage: /permissions [list | allow <tool> [pattern] [--global] | deny <tool> [pattern] [--global] | rm <n> | reset]");
+    sink.log(
+        "system",
+        "Usage: /permissions [list | allow <tool> [pattern] [--global] | deny <tool> [pattern] [--global] | rm <n> | reset]"
+    );
 }
 
 async function promptMoreModels(initialModels, providerName, sink) {
@@ -292,9 +299,7 @@ async function runAddModelWizard(state, targetProviderName, initialModels, sink,
     }
     if (!provName) return;
 
-    const toAdd = initialModels.length
-        ? initialModels
-        : await promptMoreModels([], provName, sink);
+    const toAdd = initialModels.length ? initialModels : await promptMoreModels([], provName, sink);
     if (!toAdd.length) {
         sink.log("system", "No models added.");
         return;
@@ -352,7 +357,13 @@ async function handleApiCommand(state, arg, sink) {
             if (chosen === "__add_provider__") {
                 parts[0] = "add";
             } else if (chosen === "__add_models__") {
-                await runAddModelWizard(state, !state.provider.fromEnv ? state.provider.name : "", [], sink, envFallback);
+                await runAddModelWizard(
+                    state,
+                    !state.provider.fromEnv ? state.provider.name : "",
+                    [],
+                    sink,
+                    envFallback
+                );
                 return;
             } else {
                 parts[0] = "use";
@@ -362,7 +373,8 @@ async function handleApiCommand(state, arg, sink) {
             const lines = Object.values(store.providers).map((p) => {
                 const mark = p.name === store.active ? "* " : "  ";
                 const keyInfo = p.apiKeyEnv ? `env:${p.apiKeyEnv}` : `key:${redactSecret(p.apiKey)}`;
-                const mods = Array.isArray(p.models) && p.models.length ? p.models.join(", ") : p.defaultModel || "auto";
+                const mods =
+                    Array.isArray(p.models) && p.models.length ? p.models.join(", ") : p.defaultModel || "auto";
                 return `${mark}${p.name} [${p.type}] -> ${p.baseUrl} (${keyInfo}) · models: ${mods}`;
             });
             sink.log("system", `Configured API Providers:\n${lines.join("\n")}`);
@@ -386,7 +398,12 @@ async function handleApiCommand(state, arg, sink) {
 
     if (action === "add-model") {
         const provTarget = parts[1] || (!state.provider.fromEnv ? state.provider.name : "");
-        const cliModels = parts.slice(2).join(" ").split(",").map((s) => s.trim()).filter(Boolean);
+        const cliModels = parts
+            .slice(2)
+            .join(" ")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
         await runAddModelWizard(state, provTarget, cliModels, sink, envFallback);
         return;
     }
@@ -394,7 +411,10 @@ async function handleApiCommand(state, arg, sink) {
     if (action === "add") {
         let [, name, type, baseUrl, apiKey, defaultModelArg] = parts;
         let models = defaultModelArg
-            ? defaultModelArg.split(",").map((s) => s.trim()).filter(Boolean)
+            ? defaultModelArg
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
             : [];
         const interactiveAdd = !name || !type || !baseUrl || !apiKey;
 
@@ -492,7 +512,10 @@ async function handleApiCommand(state, arg, sink) {
         }
         if (!state.noSession) saveSession(state.session, state.paths);
         sink.syncStatus();
-        sink.log("system", `Switched active API to '${active.name}' (${active.type}: ${active.baseUrl}, model: ${state.model || "auto"})`);
+        sink.log(
+            "system",
+            `Switched active API to '${active.name}' (${active.type}: ${active.baseUrl}, model: ${state.model || "auto"})`
+        );
         return;
     }
 
@@ -503,12 +526,17 @@ async function handleApiCommand(state, arg, sink) {
         sink.syncStatus();
         sink.log(
             "system",
-            removed ? `Removed provider '${parts[1]}'. Active: '${state.provider.name}'` : `Provider '${parts[1]}' not found.`
+            removed
+                ? `Removed provider '${parts[1]}'. Active: '${state.provider.name}'`
+                : `Provider '${parts[1]}' not found.`
         );
         return;
     }
 
-    sink.log("system", "Usage: /api [list | add <name> <openai|anthropic> <url> <key> [model] | use <name> | rm <name>]");
+    sink.log(
+        "system",
+        "Usage: /api [list | add <name> <openai|anthropic> <url> <key> [model] | use <name> | rm <name>]"
+    );
 }
 
 function replaySessionHistory(sink, state) {
@@ -569,9 +597,7 @@ async function openSessionPicker(state, tui, sink, waitForMemorySync) {
     while (true) {
         const list = listSessions(state.paths);
         const groups = groupSessionsByDate(list);
-        const items = [
-            { type: "new", id: "", label: "+ New Session", desc: "Start a fresh isolated session" },
-        ];
+        const items = [{ type: "new", id: "", label: "+ New Session", desc: "Start a fresh isolated session" }];
         for (const g of groups) {
             items.push({
                 type: "header",
@@ -639,7 +665,10 @@ async function handleMemoryCommand(state, arg, sink) {
             saveGlobalMemory([], state.paths);
             sink.log("system", "Global memory cleared.");
         } else {
-            sink.log("system", items.length ? items.map((x, i) => `${i + 1}. ${x}`).join("\n") : "(empty global memory)");
+            sink.log(
+                "system",
+                items.length ? items.map((x, i) => `${i + 1}. ${x}`).join("\n") : "(empty global memory)"
+            );
         }
         return;
     }
@@ -865,7 +894,10 @@ async function handleSlash(state, input, sink, deps) {
                     return;
                 }
                 state.sudoPasswords.delete(clean);
-                sink.log("system", deleteSession(clean, state.paths) ? `Deleted session '${clean}'.` : `Session '${clean}' not found.`);
+                sink.log(
+                    "system",
+                    deleteSession(clean, state.paths) ? `Deleted session '${clean}'.` : `Session '${clean}' not found.`
+                );
                 return;
             }
             sink.log("system", "Usage: /session [list|new <name>|switch <name>|delete <name>]");
@@ -923,7 +955,9 @@ async function handleSlash(state, input, sink, deps) {
                     "",
                     ...state.session.history.map((m) => {
                         const hdr = `## ${String(m.role || "unknown").toUpperCase()}`;
-                        const body = m.content ? String(m.content) : `[tool_calls: ${JSON.stringify(m.tool_calls || [])}]`;
+                        const body = m.content
+                            ? String(m.content)
+                            : `[tool_calls: ${JSON.stringify(m.tool_calls || [])}]`;
                         return `${hdr}\n\n${body}\n`;
                     }),
                 ].filter((l) => l !== "");
@@ -961,7 +995,10 @@ async function handleSlash(state, input, sink, deps) {
             const costLine = est.knownPricing
                 ? `Estimated Cost: $${est.totalUsd.toFixed(6)} (in: $${est.inCost.toFixed(6)}, out: $${est.outCost.toFixed(6)})`
                 : `Estimated Cost: unknown pricing for '${state.model}' (tokens: ${pTok} in, ${cTok} out)`;
-            sink.log("system", `${costLine}\nRequests: ${state.session?.stats?.requests || 0} · Tokens: ${pTok} in, ${cTok} out`);
+            sink.log(
+                "system",
+                `${costLine}\nRequests: ${state.session?.stats?.requests || 0} · Tokens: ${pTok} in, ${cTok} out`
+            );
             return;
         }
         case "/save": {
@@ -1082,7 +1119,10 @@ async function handleSlash(state, input, sink, deps) {
             const sub = (parts[0] || "").toLowerCase();
             if (sub === "kill" && parts[1]) {
                 const ok = mgr.killTask(parts[1]);
-                sink.log(ok ? "system" : "error", ok ? `Killed background task ${parts[1]}.` : `Task not running or not found: ${parts[1]}`);
+                sink.log(
+                    ok ? "system" : "error",
+                    ok ? `Killed background task ${parts[1]}.` : `Task not running or not found: ${parts[1]}`
+                );
                 return;
             }
             if (sub === "log" && parts[1]) {
@@ -1124,9 +1164,8 @@ async function handleSlash(state, input, sink, deps) {
             }
             sink.log(
                 "system",
-                tasks
-                    .map((t) => `  ${t.id} · [${t.status}] pid=${t.pid ?? "?"} · ${t.command}`)
-                    .join("\n") + "\nTip: /tasks log <id> · /tasks kill <id>"
+                tasks.map((t) => `  ${t.id} · [${t.status}] pid=${t.pid ?? "?"} · ${t.command}`).join("\n") +
+                    "\nTip: /tasks log <id> · /tasks kill <id>"
             );
             return;
         }
@@ -1150,13 +1189,17 @@ async function handleSlash(state, input, sink, deps) {
             return;
         }
         case "/tools": {
-            const next = arg ? arg.toLowerCase() === "on" || arg.toLowerCase() === "true" : !state.settings.toolsEnabled;
+            const next = arg
+                ? arg.toLowerCase() === "on" || arg.toLowerCase() === "true"
+                : !state.settings.toolsEnabled;
             persistAndApplySetting(state, "toolsEnabled", next, sink);
             sink.log("system", `Tools: ${state.settings.toolsEnabled ? "ON" : "OFF"}`);
             return;
         }
         case "/auto": {
-            const wantAuto = arg ? arg.toLowerCase() === "on" || arg.toLowerCase() === "true" : state.settings.agentMode !== "auto";
+            const wantAuto = arg
+                ? arg.toLowerCase() === "on" || arg.toLowerCase() === "true"
+                : state.settings.agentMode !== "auto";
             await handleModeCommand(state, wantAuto ? "auto" : "default", sink);
             return;
         }

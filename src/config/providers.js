@@ -1,12 +1,6 @@
 "use strict";
 
-const {
-    safeId,
-    ensureStorageDirs,
-    readJsonSafe,
-    atomicWriteJson,
-    resolvePaths,
-} = require("./paths");
+const { safeId, ensureStorageDirs, readJsonSafe, atomicWriteJson, resolvePaths } = require("./paths");
 
 /**
  * Redact sensitive API tokens for safe terminal and log display.
@@ -113,7 +107,9 @@ function saveProviders(store, paths = resolvePaths()) {
         const cleanId = safeId(key);
         const apiKeyEnv = String(val.apiKeyEnv || "").trim();
         const storedKey = apiKeyEnv
-            ? (val._storedApiKey !== undefined ? String(val._storedApiKey) : "")
+            ? val._storedApiKey !== undefined
+                ? String(val._storedApiKey)
+                : ""
             : String(val.apiKey || "");
         const models = normalizeModelList(val.models, val.defaultModel);
         customOnly[cleanId] = {
@@ -127,9 +123,8 @@ function saveProviders(store, paths = resolvePaths()) {
         };
     }
     const firstCustom = Object.keys(customOnly)[0] || "";
-    const active = store.active && (store.active === "default" || customOnly[store.active])
-        ? store.active
-        : firstCustom;
+    const active =
+        store.active && (store.active === "default" || customOnly[store.active]) ? store.active : firstCustom;
     atomicWriteJson(paths.providersFile, { active, providers: customOnly }, 0o600);
 }
 
@@ -171,7 +166,10 @@ function addProviderModels(envFallback, name, newModels = [], paths = resolvePat
     const store = loadProviders(envFallback, paths);
     const existing = store.providers[id];
     if (!existing) throw new Error(`Provider '${id}' not found.`);
-    const merged = normalizeModelList([...(existing.models || []), ...(Array.isArray(newModels) ? newModels : [newModels])], existing.defaultModel);
+    const merged = normalizeModelList(
+        [...(existing.models || []), ...(Array.isArray(newModels) ? newModels : [newModels])],
+        existing.defaultModel
+    );
     existing.models = merged;
     if (!existing.defaultModel && merged.length) existing.defaultModel = merged[0];
     saveProviders(store, paths);

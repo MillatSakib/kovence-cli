@@ -10,7 +10,11 @@ const { execFileSync } = require("node:child_process");
 const { executeTool } = require("../tools");
 const { resolvePaths } = require("../src/config/paths");
 const { undoLastCheckpoint } = require("../src/tools/checkpoints");
-const { gatherEnvironmentSummary, loadProjectInstructions, generateProjectInitDoc } = require("../src/agent/project_context");
+const {
+    gatherEnvironmentSummary,
+    loadProjectInstructions,
+    generateProjectInitDoc,
+} = require("../src/agent/project_context");
 
 test("F1: loads KOVENCE.md/AGENTS.md, gathers environment summary, and generates /init doc", (t) => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kovence-p1-f1-"));
@@ -40,7 +44,12 @@ test("F1: loads KOVENCE.md/AGENTS.md, gathers environment summary, and generates
 test("F2: checkpoints & /undo restore write_file, edit_file, delete_file, move_file, and apply_patch", async (t) => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kovence-p1-f2-"));
     t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
-    const paths = resolvePaths({ cwd: tmp, projectRoot: tmp, globalDir: path.join(tmp, "cfg"), projectDir: path.join(tmp, ".kovence") });
+    const paths = resolvePaths({
+        cwd: tmp,
+        projectRoot: tmp,
+        globalDir: path.join(tmp, "cfg"),
+        projectDir: path.join(tmp, ".kovence"),
+    });
     const ctx = {
         cwd: tmp,
         workspaceRoot: tmp,

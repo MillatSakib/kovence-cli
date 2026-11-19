@@ -54,7 +54,9 @@ function createPlainSink(interactive, { headless = false, jsonMode = false } = {
             const render = () => {
                 const symbol = frames[tick % frames.length];
                 const blink = dots[Math.floor(tick / 2) % dots.length];
-                process.stdout.write(`\r\x1b[K${C.cyan}${prefix}${C.reset}${C.yellow}${symbol} ${label}${blink}${C.reset}`);
+                process.stdout.write(
+                    `\r\x1b[K${C.cyan}${prefix}${C.reset}${C.yellow}${symbol} ${label}${blink}${C.reset}`
+                );
                 tick++;
             };
             render();
@@ -96,17 +98,23 @@ function createPlainSink(interactive, { headless = false, jsonMode = false } = {
 
 function addTuiBanner(tui, state) {
     const gCount = loadGlobalMemory(state.paths).length;
-    tui.addBlock("brand-cyan", [
-        "",
-        "  ██╗  ██╗ ██████╗ ██╗   ██╗███████╗███╗   ██╗ ██████╗███████╗",
-        "  ██║ ██╔╝██╔═══██╗██║   ██║██╔════╝████╗  ██║██╔════╝██╔════╝",
-        "  █████╔╝ ██║   ██║██║   ██║█████╗  ██╔██╗ ██║██║     █████╗  ",
-    ].join("\n"));
-    tui.addBlock("brand-magenta", [
-        "  ██╔═██╗ ██║   ██║╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║     ██╔══╝  ",
-        "  ██║  ██╗╚██████╔╝ ╚████╔╝ ███████╗██║ ╚████║╚██████╗███████╗",
-        "  ╚═╝  ╚═╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚══════╝",
-    ].join("\n"));
+    tui.addBlock(
+        "brand-cyan",
+        [
+            "",
+            "  ██╗  ██╗ ██████╗ ██╗   ██╗███████╗███╗   ██╗ ██████╗███████╗",
+            "  ██║ ██╔╝██╔═══██╗██║   ██║██╔════╝████╗  ██║██╔════╝██╔════╝",
+            "  █████╔╝ ██║   ██║██║   ██║█████╗  ██╔██╗ ██║██║     █████╗  ",
+        ].join("\n")
+    );
+    tui.addBlock(
+        "brand-magenta",
+        [
+            "  ██╔═██╗ ██║   ██║╚██╗ ██╔╝██╔══╝  ██║╚██╗██║██║     ██╔══╝  ",
+            "  ██║  ██╗╚██████╔╝ ╚████╔╝ ███████╗██║ ╚████║╚██████╗███████╗",
+            "  ╚═╝  ╚═╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚══════╝",
+        ].join("\n")
+    );
     tui.addBlock(
         "system",
         `Kovence CLI · https://kovence.com\nAPI: ${state.provider.name} [${state.provider.type}] · Model: ${state.model}\nMode: ${state.settings.agentMode} · Session: ${state.session.id} (${state.session.history.length} msgs, ${getContextLabel(state)}, globalMem: ${gCount})\n`
@@ -199,7 +207,10 @@ function createTuiSink(tui, state) {
         },
         async openChoicePicker(title, items, currentId = "") {
             if (!items || !items.length) return "";
-            const initialIdx = Math.max(0, items.findIndex((x) => x.id === currentId));
+            const initialIdx = Math.max(
+                0,
+                items.findIndex((x) => x.id === currentId)
+            );
             const res = await tui.openPicker(title, items, {
                 initialIdx,
                 hint: "↑/↓ select · Enter apply · Esc close",
@@ -219,7 +230,10 @@ function createTuiSink(tui, state) {
                 label: `${m.id === currentMode ? "● " : "  "}${m.id}`,
                 desc: m.desc,
             }));
-            const initialIdx = Math.max(0, modeMeta.findIndex((m) => m.id === currentMode));
+            const initialIdx = Math.max(
+                0,
+                modeMeta.findIndex((m) => m.id === currentMode)
+            );
             const res = await tui.openPicker("Select Agent Mode (Shift+Tab)", items, {
                 initialIdx,
                 hint: "↑/↓ select · Enter apply · Esc close",
@@ -256,7 +270,10 @@ function createTuiSink(tui, state) {
                     const parts = cleaned.split(/\r?\n/);
                     for (const part of parts) {
                         // If a line contains \r progress updates, keep the final segment of that line
-                        const crSegments = part.split("\r").map((s) => s.trim()).filter(Boolean);
+                        const crSegments = part
+                            .split("\r")
+                            .map((s) => s.trim())
+                            .filter(Boolean);
                         if (!crSegments.length) continue;
                         const lastSeg = crSegments[crSegments.length - 1];
                         if (part.includes("\r") && details.length > 0) {

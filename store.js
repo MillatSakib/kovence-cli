@@ -77,13 +77,10 @@ module.exports = {
 
     // Sessions
     createEmptySession: sessionsMod.createEmptySession,
-    loadSession: (id, defaultModel = "", paths = getDefaultPaths()) =>
-        sessionsMod.loadSession(id, defaultModel, paths),
+    loadSession: (id, defaultModel = "", paths = getDefaultPaths()) => sessionsMod.loadSession(id, defaultModel, paths),
     saveSession: (session, paths = getDefaultPaths()) => sessionsMod.saveSession(session, paths),
-    renameSession: (session, newId, paths = getDefaultPaths()) =>
-        sessionsMod.renameSession(session, newId, paths),
-    forkSession: (session, newId, paths = getDefaultPaths()) =>
-        sessionsMod.forkSession(session, newId, paths),
+    renameSession: (session, newId, paths = getDefaultPaths()) => sessionsMod.renameSession(session, newId, paths),
+    forkSession: (session, newId, paths = getDefaultPaths()) => sessionsMod.forkSession(session, newId, paths),
     listSessions: (paths = getDefaultPaths()) => sessionsMod.listSessions(paths),
     groupSessionsByDate: sessionsMod.groupSessionsByDate,
     suggestSessionIdFromPrompt: (promptText, paths = getDefaultPaths()) =>

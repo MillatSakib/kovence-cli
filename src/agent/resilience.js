@@ -9,7 +9,10 @@ function repairToolArguments(rawArgs) {
     if (!src) return {};
 
     // Strip markdown ```json fences if wrapped
-    src = src.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    src = src
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
 
     try {
         return JSON.parse(src);

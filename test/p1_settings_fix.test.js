@@ -7,11 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { PassThrough } = require("node:stream");
 
-const {
-    resolvePaths,
-    createEmptySession,
-    upsertProvider,
-} = require("../store");
+const { resolvePaths, createEmptySession, upsertProvider } = require("../store");
 const { persistAndApplySetting } = require("../src/commands/handlers");
 const { getPalette } = require("../src/tui/themes");
 const { renderSettingsScreen } = require("../src/tui/settings_panel");
@@ -40,10 +36,23 @@ test("persistAndApplySetting updates active model and switches provider+model dy
             globalDir: path.join(tmp, ".global"),
             projectDir: path.join(tmp, ".kovence"),
         });
-        const envFallback = { name: "default", type: "openai", baseUrl: "http://localhost:4000", apiKey: "sk-test", defaultModel: "gpt-4o" };
+        const envFallback = {
+            name: "default",
+            type: "openai",
+            baseUrl: "http://localhost:4000",
+            apiKey: "sk-test",
+            defaultModel: "gpt-4o",
+        };
         upsertProvider(
             envFallback,
-            { name: "custom1", type: "anthropic", baseUrl: "https://api.anthropic.com", apiKey: "sk-ant-123", defaultModel: "claude-sonnet-4", models: ["claude-sonnet-4", "claude-opus-4"] },
+            {
+                name: "custom1",
+                type: "anthropic",
+                baseUrl: "https://api.anthropic.com",
+                apiKey: "sk-ant-123",
+                defaultModel: "claude-sonnet-4",
+                models: ["claude-sonnet-4", "claude-opus-4"],
+            },
             paths
         );
 

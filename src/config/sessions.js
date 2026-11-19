@@ -2,13 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const {
-    safeId,
-    ensureStorageDirs,
-    readJsonSafe,
-    atomicWriteJson,
-    resolvePaths,
-} = require("./paths");
+const { safeId, ensureStorageDirs, readJsonSafe, atomicWriteJson, resolvePaths } = require("./paths");
 
 function createEmptySession(id, model = "") {
     const now = new Date().toISOString();
@@ -178,7 +172,9 @@ function forkSession(sourceSession, newId, paths = resolvePaths()) {
 
 function loadInputHistory(paths = resolvePaths()) {
     const data = readJsonSafe(paths.inputHistoryFile, []);
-    return Array.isArray(data) ? data.filter((x) => typeof x === "string" && x.trim() && !x.trim().startsWith("/")).slice(-200) : [];
+    return Array.isArray(data)
+        ? data.filter((x) => typeof x === "string" && x.trim() && !x.trim().startsWith("/")).slice(-200)
+        : [];
 }
 
 function saveInputHistory(items, paths = resolvePaths()) {

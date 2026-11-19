@@ -73,7 +73,12 @@ test("runToolCalls flushes parallel reads before download and skips dependent ru
     fs.writeFileSync(path.join(tmp, "info.txt"), "hello world\n", "utf8");
     t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
-    const paths = resolvePaths({ cwd: tmp, projectRoot: tmp, globalDir: cfgDir, projectDir: path.join(tmp, ".kovence") });
+    const paths = resolvePaths({
+        cwd: tmp,
+        projectRoot: tmp,
+        globalDir: cfgDir,
+        projectDir: path.join(tmp, ".kovence"),
+    });
     const logs = [];
     const sink = {
         interactive: false,
@@ -96,7 +101,10 @@ test("runToolCalls flushes parallel reads before download and skips dependent ru
 
     const toolCalls = [
         { id: "c1", function: { name: "read_file", arguments: JSON.stringify({ path: "info.txt" }) } },
-        { id: "c2", function: { name: "download_file", arguments: JSON.stringify({ url: "http://127.0.0.1:9/a.deb" }) } },
+        {
+            id: "c2",
+            function: { name: "download_file", arguments: JSON.stringify({ url: "http://127.0.0.1:9/a.deb" }) },
+        },
         { id: "c3", function: { name: "run_command", arguments: JSON.stringify({ command: "echo SHOULD_NOT_RUN" }) } },
     ];
 
@@ -121,7 +129,10 @@ test("runToolCalls flushes parallel reads before download and skips dependent ru
 
 test("AggregateError formatting never returns blank and long modal/permission prompts wrap cleanly within cols", () => {
     const agg = new AggregateError(
-        [Object.assign(new Error("connect ETIMEDOUT"), { code: "ETIMEDOUT" }), Object.assign(new Error("connect ENETUNREACH"), { code: "ENETUNREACH" })],
+        [
+            Object.assign(new Error("connect ETIMEDOUT"), { code: "ETIMEDOUT" }),
+            Object.assign(new Error("connect ENETUNREACH"), { code: "ENETUNREACH" }),
+        ],
         ""
     );
     const formatted = formatNetworkError(agg);

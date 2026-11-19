@@ -158,7 +158,11 @@ async function runDoctor(paths, envFallback) {
     const nodeOk = nodeParts[0] > 20 || (nodeParts[0] === 20 && nodeParts[1] >= 12);
     checks.push({ name: "Node.js (>=20.12)", ok: nodeOk, detail: `v${process.versions.node}` });
     checks.push({ name: "git", ok: hasBin("git"), detail: hasBin("git") ? "installed" : "missing (optional)" });
-    checks.push({ name: "ripgrep (rg)", ok: hasBin("rg"), detail: hasBin("rg") ? "installed" : "missing (JS fallback active)" });
+    checks.push({
+        name: "ripgrep (rg)",
+        ok: hasBin("rg"),
+        detail: hasBin("rg") ? "installed" : "missing (JS fallback active)",
+    });
     checks.push({ name: "sudo", ok: hasBin("sudo"), detail: hasBin("sudo") ? "installed" : "missing" });
     checks.push({ name: "Global config dir", ok: true, detail: paths.globalDir });
     checks.push({ name: "Project .kovence dir", ok: true, detail: paths.projectDir });
@@ -216,7 +220,10 @@ async function runPlainRepl(state) {
     const slashDeps = { waitForMemorySync, runAgentTurn, compactSession };
 
     while (true) {
-        const raw = await promptLine(`${C.green}[${state.session.id}:${state.settings.agentMode}] You: ${C.reset}`, inputHistory);
+        const raw = await promptLine(
+            `${C.green}[${state.session.id}:${state.settings.agentMode}] You: ${C.reset}`,
+            inputHistory
+        );
         if (raw === null) break;
         const input = raw.trim();
         if (!input) continue;
@@ -283,7 +290,10 @@ async function runTuiRepl(state) {
                 sink.log("user", item);
                 try {
                     if (!state.provider || state.provider.empty || !state.provider.baseUrl || !state.provider.apiKey) {
-                        sink.log("system", "No AI provider configured yet. Use /api add or /models to add a custom provider.");
+                        sink.log(
+                            "system",
+                            "No AI provider configured yet. Use /api add or /models to add a custom provider."
+                        );
                         state.activePrompt = "";
                         continue;
                     }
@@ -340,7 +350,9 @@ async function runTuiRepl(state) {
                 state.queue.push(raw);
                 tui.addBlock(
                     "queued",
-                    state.isDownloading ? `[Queued while downloading #${state.queue.length}] ${raw}` : `[Queued #${state.queue.length}] ${raw}`
+                    state.isDownloading
+                        ? `[Queued while downloading #${state.queue.length}] ${raw}`
+                        : `[Queued #${state.queue.length}] ${raw}`
                 );
                 sink.syncStatus();
                 return;
@@ -440,7 +452,9 @@ async function runTuiRepl(state) {
                         } catch {}
                     }
                     const saved = Array.isArray(state.provider?.models) ? state.provider.models : [];
-                    const allModels = [...new Set([state.model, ...saved, ...live, state.provider?.defaultModel].filter(Boolean))];
+                    const allModels = [
+                        ...new Set([state.model, ...saved, ...live, state.provider?.defaultModel].filter(Boolean)),
+                    ];
                     const items = [
                         ...allModels.map((id) => ({
                             type: "model",
@@ -450,7 +464,11 @@ async function runTuiRepl(state) {
                         })),
                         { type: "new", id: "__custom__", label: "+ Enter custom model ID", desc: "" },
                     ];
-                    const picked = await sink.openChoicePicker(`Select Model (${state.provider.name})`, items, state.model);
+                    const picked = await sink.openChoicePicker(
+                        `Select Model (${state.provider.name})`,
+                        items,
+                        state.model
+                    );
                     if (picked === "__custom__") {
                         const custom = (await tui.askModal("Custom model ID: ", false)).trim();
                         if (custom) persistAndApplySetting(state, "model", custom, sink);
@@ -534,7 +552,9 @@ async function main() {
     const piped = await readPipedStdin();
     if (!provider || !provider.apiKey || provider.apiKey === "sk-your-virtual-key") {
         if (opts.prompt || piped) {
-            console.error("No AI provider configured. Run interactively and use /api add or /models to add a provider.");
+            console.error(
+                "No AI provider configured. Run interactively and use /api add or /models to add a provider."
+            );
             process.exit(1);
         }
         provider = {
@@ -566,9 +586,7 @@ async function main() {
     }
 
     const session =
-        opts.noSession || isFreshSession
-            ? createEmptySession(sessionId, "")
-            : loadSession(sessionId, "", paths);
+        opts.noSession || isFreshSession ? createEmptySession(sessionId, "") : loadSession(sessionId, "", paths);
 
     const runtimeOverrides = {
         cliAuto: opts.autoApprove === true,
@@ -631,9 +649,7 @@ async function main() {
 
     if (opts.prompt || piped) {
         state.headless = true;
-        const combined = [opts.prompt, piped ? `\`\`\`\n${capOutput(piped)}\n\`\`\`` : ""]
-            .filter(Boolean)
-            .join("\n\n");
+        const combined = [opts.prompt, piped ? `\`\`\`\n${capOutput(piped)}\n\`\`\`` : ""].filter(Boolean).join("\n\n");
         const sink = createPlainSink(false, { headless: true, jsonMode: opts.json });
         try {
             const result = await runAgentTurn(state, combined, sink);

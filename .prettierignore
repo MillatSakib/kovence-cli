@@ -1,0 +1,7 @@
+node_modules/
+.kovence/
+.ai_harness/
+coverage/
+package-lock.json
+docs/
+*.md

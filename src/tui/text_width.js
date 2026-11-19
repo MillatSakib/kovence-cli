@@ -129,7 +129,11 @@ function wrapPlain(text, width) {
                 out.push(rawLine.slice(graphemes[startG].index, graphemes[lastSpaceG].index));
                 startG = lastSpaceG + 1;
                 while (startG < graphemes.length && graphemes[startG].segment === " ") startG += 1;
-            } else if (endG < graphemes.length && lastSoftBreakG > startG + Math.floor((endG - startG) * 0.4) && lastSoftBreakG < endG) {
+            } else if (
+                endG < graphemes.length &&
+                lastSoftBreakG > startG + Math.floor((endG - startG) * 0.4) &&
+                lastSoftBreakG < endG
+            ) {
                 out.push(rawLine.slice(graphemes[startG].index, graphemes[lastSoftBreakG].index));
                 startG = lastSoftBreakG;
             } else {

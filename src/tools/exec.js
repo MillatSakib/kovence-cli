@@ -53,11 +53,25 @@ function killProcessGroup(child, sig = "SIGTERM") {
  */
 function spawnShell(
     command,
-    { cwd = process.cwd(), timeout = 15000, stdinText = null, signal = null, env = null, maxCapture = 64000, onData = null } = {}
+    {
+        cwd = process.cwd(),
+        timeout = 15000,
+        stdinText = null,
+        signal = null,
+        env = null,
+        maxCapture = 64000,
+        onData = null,
+    } = {}
 ) {
     return new Promise((resolve) => {
         if (signal?.aborted) {
-            resolve({ code: "aborted", stdout: "", stderr: "Aborted before execution", timedOut: false, aborted: true });
+            resolve({
+                code: "aborted",
+                stdout: "",
+                stderr: "Aborted before execution",
+                timedOut: false,
+                aborted: true,
+            });
             return;
         }
 

@@ -1,11 +1,6 @@
 "use strict";
 
-const {
-    ensureStorageDirs,
-    readJsonSafe,
-    atomicWriteJson,
-    resolvePaths,
-} = require("./paths");
+const { ensureStorageDirs, readJsonSafe, atomicWriteJson, resolvePaths } = require("./paths");
 
 const MAX_GLOBAL_ITEMS = 50;
 const MAX_GLOBAL_CHARS = 8000;
@@ -65,7 +60,10 @@ function saveGlobalMemory(items, paths = resolvePaths()) {
 }
 
 function addGlobalMemory(fact, source = "user", paths = resolvePaths()) {
-    const clean = String(fact || "").replace(/\s+/g, " ").trim().slice(0, MAX_ITEM_CHARS);
+    const clean = String(fact || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, MAX_ITEM_CHARS);
     if (!clean) return false;
     const entries = loadGlobalMemoryEntries(paths);
     if (entries.some((x) => x.text.toLowerCase() === clean.toLowerCase())) return false;
@@ -99,7 +97,10 @@ function saveProjectMemory(items, paths = resolvePaths()) {
 }
 
 function addProjectMemory(fact, source = "user", paths = resolvePaths()) {
-    const clean = String(fact || "").replace(/\s+/g, " ").trim().slice(0, MAX_ITEM_CHARS);
+    const clean = String(fact || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, MAX_ITEM_CHARS);
     if (!clean) return false;
     const entries = loadProjectMemoryEntries(paths);
     if (entries.some((x) => x.text.toLowerCase() === clean.toLowerCase())) return false;
@@ -134,9 +135,13 @@ function classifyMemoryIntent(userText) {
     }
 
     if (EXPLICIT_MEMORY_RE.test(clean) || EXPLICIT_DIRECTIVE_PREF_RE.test(clean)) {
-        body = clean
-            .replace(/^(?:please\s+)?(?:remember(?:\s+(?:that|this))?|always\s+remember|save\s+(?:this\s+)?(?:to\s+)?(?:global|default|project|session)?\s*memory:?)\s*/i, "")
-            .trim() || clean;
+        body =
+            clean
+                .replace(
+                    /^(?:please\s+)?(?:remember(?:\s+(?:that|this))?|always\s+remember|save\s+(?:this\s+)?(?:to\s+)?(?:global|default|project|session)?\s*memory:?)\s*/i,
+                    ""
+                )
+                .trim() || clean;
         const scope = LOCAL_ONLY_RE.test(clean) ? "session" : "global";
         return { scope, fact: body, explicitCommand: false };
     }

@@ -5,13 +5,7 @@ const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
 
 const { KovenceTUI, layoutComposer } = require("../tui");
-const {
-    stripAnsi,
-    displayWidth,
-    wrapPlain,
-    clipToWidth,
-    prevGraphemeBoundary,
-} = require("../src/tui/text_width");
+const { stripAnsi, displayWidth, wrapPlain, clipToWidth, prevGraphemeBoundary } = require("../src/tui/text_width");
 
 function createFakeTty() {
     const chunks = [];
@@ -61,7 +55,15 @@ test("A1 + B8: interactive Settings panel filters, cycles, validates No NaN, man
     const { stdout, stdin, getOutput, clearOutput } = createFakeTty();
     const state = { agentMode: "default", maxToolSteps: 25, verbosity: "normal", colorScheme: "amber" };
     const rules = [
-        { id: "r1", origin: "project", action: "allow", tool: "run_command", scope: "commandPrefix", pattern: "npm test", createdAt: "2026-01-01" },
+        {
+            id: "r1",
+            origin: "project",
+            action: "allow",
+            tool: "run_command",
+            scope: "commandPrefix",
+            pattern: "npm test",
+            createdAt: "2026-01-01",
+        },
     ];
 
     const tui = new KovenceTUI({
@@ -288,7 +290,12 @@ test("/model browser shows Providers (+ Add/Remove) -> selected Provider Models 
 
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kovence-model-browser-"));
     t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
-    const paths = resolvePaths({ cwd: tmp, projectRoot: tmp, globalDir: path.join(tmp, "cfg"), projectDir: path.join(tmp, ".kovence") });
+    const paths = resolvePaths({
+        cwd: tmp,
+        projectRoot: tmp,
+        globalDir: path.join(tmp, "cfg"),
+        projectDir: path.join(tmp, ".kovence"),
+    });
 
     upsertProvider(
         { baseUrl: "http://127.0.0.1:1/v1", apiKey: "k" },
@@ -335,7 +342,3 @@ test("/model browser shows Providers (+ Add/Remove) -> selected Provider Models 
     assert.equal(state.provider.name, "openrouter");
     assert.equal(state.model, "anthropic/claude-3.7-sonnet");
 });
-
-
-
-

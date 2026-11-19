@@ -108,16 +108,39 @@ test("runAgentTurn keeps state.activeAbort alive during tool execution and abort
     await new Promise((r) => server.listen(0, "127.0.0.1", r));
     t.after(() => server.close());
 
-    const paths = resolvePaths({ cwd: tmp, projectRoot: tmp, globalDir: cfgDir, projectDir: path.join(tmp, ".kovence") });
+    const paths = resolvePaths({
+        cwd: tmp,
+        projectRoot: tmp,
+        globalDir: cfgDir,
+        projectDir: path.join(tmp, ".kovence"),
+    });
     const state = {
         paths,
         workspaceRoot: tmp,
         extraDirs: [],
         noSession: true,
-        provider: { name: "mock", type: "openai", baseUrl: `http://127.0.0.1:${server.address().port}/v1`, apiKey: "k" },
+        provider: {
+            name: "mock",
+            type: "openai",
+            baseUrl: `http://127.0.0.1:${server.address().port}/v1`,
+            apiKey: "k",
+        },
         model: "mock-m",
-        settings: { agentMode: "auto", toolPermission: "always-proceed", toolsEnabled: true, maxToolSteps: 5, contextWindow: 32000, systemPrompt: "test" },
-        session: { id: "default", history: [], pinnedMemory: [], todos: [], stats: { requests: 0, totalMs: 0, promptTokens: 0, completionTokens: 0 } },
+        settings: {
+            agentMode: "auto",
+            toolPermission: "always-proceed",
+            toolsEnabled: true,
+            maxToolSteps: 5,
+            contextWindow: 32000,
+            systemPrompt: "test",
+        },
+        session: {
+            id: "default",
+            history: [],
+            pinnedMemory: [],
+            todos: [],
+            stats: { requests: 0, totalMs: 0, promptTokens: 0, completionTokens: 0 },
+        },
         sessionRules: [],
         capabilities: { _byModel: new Map() },
         sudoPasswords: new Map(),
@@ -144,7 +167,10 @@ test("runAgentTurn keeps state.activeAbort alive during tool execution and abort
         startThinking: () => ({ stop() {}, write() {}, end() {} }),
     };
 
-    await assert.rejects(() => runAgentTurn(state, "run slow sleep", sink), (err) => err.name === "AbortError" || err.aborted);
+    await assert.rejects(
+        () => runAgentTurn(state, "run slow sleep", sink),
+        (err) => err.name === "AbortError" || err.aborted
+    );
     assert.ok(toolStartedAt > 0);
     const elapsedAfterStart = Date.now() - toolStartedAt;
     assert.ok(elapsedAfterStart < 1200, `Expected abort within 1.2s of tool start, took ${elapsedAfterStart}ms`);
@@ -218,6 +244,8 @@ test("Esc clears /command input immediately and Ctrl+C cancel restores active + 
     assert.equal(tui.input, "fix the login bug\nadd unit tests\nupdate readme");
     assert.equal(tui.cursor, tui.input.length);
     assert.equal(state.queue.length, 0);
-    assert.equal(tui.blocks.some((b) => b.kind === "queued"), false);
+    assert.equal(
+        tui.blocks.some((b) => b.kind === "queued"),
+        false
+    );
 });
-

@@ -22,14 +22,7 @@ const READ_TOOLS = new Set([
 
 const NETWORK_READ_TOOLS = new Set(["web_fetch", "web_search", "google_search"]);
 
-const FILE_EDIT_TOOLS = new Set([
-    "write_file",
-    "edit_file",
-    "multi_edit",
-    "apply_patch",
-    "move_file",
-    "mkdir",
-]);
+const FILE_EDIT_TOOLS = new Set(["write_file", "edit_file", "multi_edit", "apply_patch", "move_file", "mkdir"]);
 
 const FILE_PATH_TOOLS = new Set([
     "list_dir",
@@ -46,11 +39,7 @@ const FILE_PATH_TOOLS = new Set([
     "mkdir",
 ]);
 
-const MEMORY_WRITE_TOOLS = new Set([
-    "save_session_memory",
-    "save_global_memory",
-    "delete_global_memory",
-]);
+const MEMORY_WRITE_TOOLS = new Set(["save_session_memory", "save_global_memory", "delete_global_memory"]);
 
 const PLAN_BLOCKED_TOOLS = new Set([
     ...FILE_EDIT_TOOLS,
@@ -119,7 +108,18 @@ const READ_ONLY_GIT_SUBCOMMANDS = new Set([
     "remote",
 ]);
 
-const TWO_WORD_PREFIX_TOOLS = new Set(["git", "npm", "npx", "yarn", "pnpm", "cargo", "docker", "kubectl", "pip", "pip3"]);
+const TWO_WORD_PREFIX_TOOLS = new Set([
+    "git",
+    "npm",
+    "npx",
+    "yarn",
+    "pnpm",
+    "cargo",
+    "docker",
+    "kubectl",
+    "pip",
+    "pip3",
+]);
 
 /**
  * Resolve nearest realpath even when target file does not exist yet (catches symlink escapes).
@@ -358,14 +358,9 @@ function normalizeHomePath(p) {
 function isProtectedConfigPath(filePath) {
     const home = os.homedir();
     const resolved = resolveRealWithMissingLeaf(normalizeHomePath(filePath));
-    const criticalFiles = [
-        ".bashrc",
-        ".zshrc",
-        ".profile",
-        ".bash_profile",
-        ".zprofile",
-        ".bash_login",
-    ].map((f) => path.join(home, f));
+    const criticalFiles = [".bashrc", ".zshrc", ".profile", ".bash_profile", ".zprofile", ".bash_login"].map((f) =>
+        path.join(home, f)
+    );
     if (criticalFiles.some((f) => resolved === f)) return "Shell startup config (~/.bashrc / ~/.zshrc / ~/.profile)";
     if (isWithinDir(resolved, path.join(home, ".ssh"))) return "SSH directory (~/.ssh)";
     if (["/etc/passwd", "/etc/shadow", "/etc/sudoers"].includes(resolved) || resolved.startsWith("/etc/sudoers.d/")) {
@@ -416,7 +411,12 @@ function checkHardDenylist(toolName, args, workspaceRoot, isAutoMode = false) {
                 const secretReason = isSecretFilePath(p);
                 if (secretReason) return secretReason;
             }
-            if (toolName !== "read_file" && toolName !== "list_dir" && toolName !== "glob_files" && toolName !== "search_files") {
+            if (
+                toolName !== "read_file" &&
+                toolName !== "list_dir" &&
+                toolName !== "glob_files" &&
+                toolName !== "search_files"
+            ) {
                 const protReason = isProtectedConfigPath(p);
                 if (protReason) return protReason;
             }
@@ -433,10 +433,19 @@ function checkHardDenylist(toolName, args, workspaceRoot, isAutoMode = false) {
     }
 
     // Critical shell/ssh/secret targets via shell command
-    if (/(>>?\s*|tee\s+)(~\/|\$HOME\/)?(\.ssh\/|\.bashrc|\.zshrc|\.profile|\.bash_profile|\/etc\/(passwd|shadow|sudoers))/i.test(cmd)) {
+    if (
+        /(>>?\s*|tee\s+)(~\/|\$HOME\/)?(\.ssh\/|\.bashrc|\.zshrc|\.profile|\.bash_profile|\/etc\/(passwd|shadow|sudoers))/i.test(
+            cmd
+        )
+    ) {
         return "Modifying sensitive ~/.ssh, shell rc, or /etc auth files";
     }
-    if (!isAutoMode && /(?:^|\s|\/)(\.env(?!\.(?:example|sample|template))|id_rsa|id_ed25519|\.aws\/credentials|\.npmrc|\.netrc)(?:\s|$)/i.test(cmd)) {
+    if (
+        !isAutoMode &&
+        /(?:^|\s|\/)(\.env(?!\.(?:example|sample|template))|id_rsa|id_ed25519|\.aws\/credentials|\.npmrc|\.netrc)(?:\s|$)/i.test(
+            cmd
+        )
+    ) {
         return "Accessing sensitive secret or credential files";
     }
 
@@ -463,7 +472,11 @@ function checkHardDenylist(toolName, args, workspaceRoot, isAutoMode = false) {
             if (isPush && isForce) return "Force pushing git history (git push --force)";
         }
         if (!isAutoMode && usesSudo && ["apt", "apt-get", "dpkg", "yum", "dnf", "pacman", "snap"].includes(bin)) {
-            if (argsList.some((a) => ["remove", "purge", "autoremove", "erase", "-r", "-P", "-R", "--remove", "--purge"].includes(a))) {
+            if (
+                argsList.some((a) =>
+                    ["remove", "purge", "autoremove", "erase", "-r", "-P", "-R", "--remove", "--purge"].includes(a)
+                )
+            ) {
                 return `Sudo package removal (${bin})`;
             }
         }
@@ -476,13 +489,11 @@ function checkHardDenylist(toolName, args, workspaceRoot, isAutoMode = false) {
                     if (["/", "/*", "~", "$HOME", "${HOME}", ".", "./", "..", "*"].includes(t)) {
                         return `Destructive recursive rm targeting '${t}'`;
                     }
-                    const resolvedTarget = resolveRealWithMissingLeaf(normalizeHomePath(path.resolve(workspaceRoot, t)));
+                    const resolvedTarget = resolveRealWithMissingLeaf(
+                        normalizeHomePath(path.resolve(workspaceRoot, t))
+                    );
                     const resolvedRoot = resolveRealWithMissingLeaf(workspaceRoot);
-                    if (
-                        resolvedTarget === "/" ||
-                        resolvedTarget === os.homedir() ||
-                        resolvedTarget === resolvedRoot
-                    ) {
+                    if (resolvedTarget === "/" || resolvedTarget === os.homedir() || resolvedTarget === resolvedRoot) {
                         return `Destructive recursive rm targeting protected root '${resolvedTarget}'`;
                     }
                 }
@@ -768,9 +779,7 @@ function buildSuggestedRules(toolName, args = {}, workspaceRoot = process.cwd())
     const suggestions = [];
     if (toolName === "run_command") {
         const parsed = parseShellCommand(args?.command || "");
-        const prefixes = Array.from(
-            new Set(parsed.segments.map(getSegmentPrefix).filter(Boolean))
-        );
+        const prefixes = Array.from(new Set(parsed.segments.map(getSegmentPrefix).filter(Boolean)));
         if (prefixes.length === 1 && !parsed.hasSubshell && !parsed.hasRedirect) {
             suggestions.push({
                 label: `command prefix '${prefixes[0]}'`,
@@ -789,7 +798,10 @@ function buildSuggestedRules(toolName, args = {}, workspaceRoot = process.cwd())
         if (target) {
             const abs = path.resolve(workspaceRoot, String(target));
             const relDir = path.relative(workspaceRoot, path.dirname(abs)).replace(/\\/g, "/");
-            const dirGlob = relDir && !relDir.startsWith("..") ? `${relDir}/**` : path.relative(workspaceRoot, abs).replace(/\\/g, "/") || abs;
+            const dirGlob =
+                relDir && !relDir.startsWith("..")
+                    ? `${relDir}/**`
+                    : path.relative(workspaceRoot, abs).replace(/\\/g, "/") || abs;
             suggestions.push({
                 label: `path '${dirGlob}' for ${toolName}`,
                 rule: { action: "allow", tool: toolName, scope: "path", pattern: dirGlob },

@@ -191,7 +191,8 @@ async function listProviderModels(provider, { timeoutMs = 15000, signal = null }
     }
 }
 
-const STREAM_OPTIONS_UNSUPPORTED_RE = /\b(stream_options|include_usage)\b.*(unsupported|unknown|unrecognized|not allowed|invalid|not supported)/i;
+const STREAM_OPTIONS_UNSUPPORTED_RE =
+    /\b(stream_options|include_usage)\b.*(unsupported|unknown|unrecognized|not allowed|invalid|not supported)/i;
 const TOOLS_UNSUPPORTED_RE =
     /(does not support|not support|unsupported|unavailable for|cannot use).{0,40}\b(tools?|function[ _]call|tool_choice)\b|\b(tools?|tool_choice)\b.{0,40}(is|are) not supported/i;
 
@@ -231,7 +232,10 @@ async function fetchWithAdapter({
             if (!bodyBase._noTools && settings?.toolsEnabled && modelCaps.supportsTools) {
                 payload.tools = toAnthropicTools(toolDefinitions);
             }
-            if (registryCaps.supportsTemperature !== false && Number.isFinite(bodyBase.temperature ?? settings?.temperature)) {
+            if (
+                registryCaps.supportsTemperature !== false &&
+                Number.isFinite(bodyBase.temperature ?? settings?.temperature)
+            ) {
                 payload.temperature = bodyBase.temperature ?? settings.temperature;
             }
         } else {
@@ -243,11 +247,19 @@ async function fetchWithAdapter({
             if (payload.stream && modelCaps.supportsStreamOptions) {
                 payload.stream_options = { include_usage: true };
             }
-            if (!bodyBase._noTools && settings?.toolsEnabled && modelCaps.supportsTools && registryCaps.supportsTools !== false) {
+            if (
+                !bodyBase._noTools &&
+                settings?.toolsEnabled &&
+                modelCaps.supportsTools &&
+                registryCaps.supportsTools !== false
+            ) {
                 payload.tools = toolDefinitions;
                 payload.tool_choice = "auto";
             }
-            if (registryCaps.supportsTemperature !== false && Number.isFinite(bodyBase.temperature ?? settings?.temperature)) {
+            if (
+                registryCaps.supportsTemperature !== false &&
+                Number.isFinite(bodyBase.temperature ?? settings?.temperature)
+            ) {
                 payload.temperature = bodyBase.temperature ?? settings.temperature;
             }
             if (Number.isFinite(bodyBase.max_tokens ?? settings?.maxTokens)) {
@@ -311,10 +323,22 @@ async function fetchWithAdapter({
         downgradeAttempts += 1;
     }
 
-    throw new Error(`HTTP ${lastRes?.status || "error"}: ${lastRes ? await lastRes.text().catch(() => "") : "Exhausted retries"}`);
+    throw new Error(
+        `HTTP ${lastRes?.status || "error"}: ${lastRes ? await lastRes.text().catch(() => "") : "Exhausted retries"}`
+    );
 }
 
-async function streamProviderTurn({ provider, model, settings, messages, signal, sink, capabilities, toolDefinitions, timeoutMs = 120000 }) {
+async function streamProviderTurn({
+    provider,
+    model,
+    settings,
+    messages,
+    signal,
+    sink,
+    capabilities,
+    toolDefinitions,
+    timeoutMs = 120000,
+}) {
     const startedAt = Date.now();
     const streamUi = sink.startThinking("Kovence: ", "Thinking");
     let res;
@@ -358,7 +382,11 @@ async function streamProviderTurn({ provider, model, settings, messages, signal,
         for (const d of deltas) {
             const idx = d.index ?? 0;
             if (!toolMap.has(idx)) {
-                toolMap.set(idx, { id: d.id || `call_${idx}`, type: "function", function: { name: "", arguments: "" } });
+                toolMap.set(idx, {
+                    id: d.id || `call_${idx}`,
+                    type: "function",
+                    function: { name: "", arguments: "" },
+                });
             }
             const entry = toolMap.get(idx);
             if (d.id) entry.id = d.id;

@@ -19,7 +19,8 @@ function estimateTextTokens(text) {
 function estimateMessageTokens(msg) {
     if (!msg) return 0;
     let tokens = 6; // per-message framing overhead
-    if (msg.content) tokens += estimateTextTokens(typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content));
+    if (msg.content)
+        tokens += estimateTextTokens(typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content));
     if (Array.isArray(msg.tool_calls)) {
         for (const tc of msg.tool_calls) {
             tokens += 8 + estimateTextTokens(tc.function?.name) + estimateTextTokens(tc.function?.arguments);
@@ -69,7 +70,8 @@ function compressOversizedTurn(turnMessages, maxMessages) {
     const keepTailFrom = Math.max(1, result.length - 4);
     for (let i = 1; i < keepTailFrom; i++) {
         if (result[i].role === "tool" && typeof result[i].content === "string" && result[i].content.length > 350) {
-            result[i].content = `${result[i].content.slice(0, 220)}\n... [pruned earlier tool output: ${result[i].content.length} chars]`;
+            result[i].content =
+                `${result[i].content.slice(0, 220)}\n... [pruned earlier tool output: ${result[i].content.length} chars]`;
         }
     }
     return result;

@@ -156,7 +156,10 @@ test("SHA-256 mismatch removes the corrupt file, correct digest passes", async (
     assert.equal(ok.verified, true);
 
     const destBad = path.join(tmp, "bad.bin");
-    await assert.rejects(() => downloadResumable(url, destBad, { ...FAST, sha256: "00".repeat(32) }), /SHA-256 mismatch/);
+    await assert.rejects(
+        () => downloadResumable(url, destBad, { ...FAST, sha256: "00".repeat(32) }),
+        /SHA-256 mismatch/
+    );
     assert.equal(fs.existsSync(destBad), false);
     assert.equal(fs.existsSync(`${destBad}.part`), false);
 });

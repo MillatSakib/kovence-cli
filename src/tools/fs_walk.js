@@ -45,9 +45,7 @@ function parseGitignoreFile(gitignorePath, relDir) {
             .replace(/\?/g, "[^/]")
             .replace(/__GLOBSTAR__/g, ".*");
 
-        const re = anchored || hasSlash
-            ? new RegExp(`^${escaped}(?:/.*)?$`)
-            : new RegExp(`(^|/)${escaped}(?:/.*)?$`);
+        const re = anchored || hasSlash ? new RegExp(`^${escaped}(?:/.*)?$`) : new RegExp(`(^|/)${escaped}(?:/.*)?$`);
 
         rules.push({ negated, dirOnly, relBase: relDir, re });
     }
@@ -78,7 +76,10 @@ function isIgnoredByRules(relPathFromRoot, isDir, rules) {
  * Convert a user glob pattern to a relative-path RegExp.
  */
 function globToRegex(glob) {
-    const clean = String(glob || "*").trim().replace(/\\/g, "/").replace(/^\.\//, "");
+    const clean = String(glob || "*")
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\.\//, "");
     const esc = clean
         .replace(/[.+^${}()|[\]\\]/g, "\\$&")
         .replace(/\*\*/g, "__GLOBSTAR__")

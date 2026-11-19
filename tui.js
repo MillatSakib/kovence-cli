@@ -677,7 +677,9 @@ class KovenceTUI {
                         );
                         for (const wl of wrapped) {
                             const w = displayWidth(wl);
-                            blockLines.push(`${ansi.barBg}${ansi.cyan}┃ ${ansi.white}${padRight(wl, w, cols - 2)}${ansi.reset}`);
+                            blockLines.push(
+                                `${ansi.barBg}${ansi.cyan}┃ ${ansi.white}${padRight(wl, w, cols - 2)}${ansi.reset}`
+                            );
                         }
                         blockLines.push("");
                     } else if (b.kind === "assistant") {
@@ -845,7 +847,11 @@ class KovenceTUI {
 
         // 1) Top Brand Header
         const qText = this.status.queueLen ? `Queue: ${this.status.queueLen} ` : "";
-        const bText = this.status.notice ? `${this.status.notice} ` : this.status.busyLabel ? `${this.status.busyLabel} ` : "";
+        const bText = this.status.notice
+            ? `${this.status.notice} `
+            : this.status.busyLabel
+              ? `${this.status.busyLabel} `
+              : "";
         const rightPlain = `${qText}${bText}`;
         const maxLeftHdr = Math.max(12, cols - displayWidth(rightPlain) - 1);
         const rawLeftHdr = ` KOVENCE CLI · https://kovence.com · [${this.status.sessionId}]`;
@@ -865,7 +871,12 @@ class KovenceTUI {
         for (let i = 0; i < viewHeight; i++) {
             const absIdx = startIdx + i;
             let line = allViewLines[absIdx] || "";
-            if (normSel && absIdx >= normSel.start.absLine && absIdx <= normSel.end.absLine && absIdx < plainLines.length) {
+            if (
+                normSel &&
+                absIdx >= normSel.start.absLine &&
+                absIdx <= normSel.end.absLine &&
+                absIdx < plainLines.length
+            ) {
                 const pl = plainLines[absIdx];
                 const plW = displayWidth(pl);
                 const c1 = absIdx === normSel.start.absLine ? Math.min(plW, normSel.start.col) : 0;
@@ -887,13 +898,17 @@ class KovenceTUI {
             );
             const hintText = this.picker.hint || "↑/↓ select · Enter open · d delete · Esc close";
             const titleText = clipToWidth(` ${this.picker.title} · ${hintText}`, cols);
-            out.push(`${ansi.topBg}${ansi.orange}${ansi.bold}${padRight(titleText, displayWidth(titleText), cols)}${ansi.reset}\x1b[K\n`);
+            out.push(
+                `${ansi.topBg}${ansi.orange}${ansi.bold}${padRight(titleText, displayWidth(titleText), cols)}${ansi.reset}\x1b[K\n`
+            );
             for (let i = 0; i < maxVisible; i++) {
                 const idx = pStart + i;
                 const it = this.picker.items[idx];
                 if (it.type === "header") {
                     const hdrText = clipToWidth(` ── ${it.label} ── ${it.desc || ""}`, cols);
-                    out.push(`${ansi.barBg}${ansi.orange}${ansi.bold}${padRight(hdrText, displayWidth(hdrText), cols)}${ansi.reset}\x1b[K\n`);
+                    out.push(
+                        `${ansi.barBg}${ansi.orange}${ansi.bold}${padRight(hdrText, displayWidth(hdrText), cols)}${ansi.reset}\x1b[K\n`
+                    );
                     continue;
                 }
                 const active = idx === this.picker.selIdx;
@@ -927,7 +942,9 @@ class KovenceTUI {
         for (const ml of modalLines) {
             const clippedModal = clipToWidth(ml, Math.max(8, cols - 3));
             const mw = displayWidth(clippedModal);
-            out.push(`${ansi.barBg}${ansi.orange}┃ ${ansi.amber}${padRight(clippedModal, mw, cols - 2)}${ansi.reset}\x1b[K\n`);
+            out.push(
+                `${ansi.barBg}${ansi.orange}┃ ${ansi.amber}${padRight(clippedModal, mw, cols - 2)}${ansi.reset}\x1b[K\n`
+            );
         }
 
         const prefixSpace = " ".repeat(displayWidth(promptPrefix));
@@ -981,7 +998,8 @@ class KovenceTUI {
         // Exact cursor placement (accounts cleanly for wrapped modal header lines)
         const curLineText = compLayout.lines[compLayout.curRow] || "";
         const curColVis = displayWidth(curLineText.slice(0, compLayout.curCol));
-        const inputRow = headerRows + viewHeight + pickerRows + sugRows + 2 + modalLines.length + (compLayout.curRow - compStart);
+        const inputRow =
+            headerRows + viewHeight + pickerRows + sugRows + 2 + modalLines.length + (compLayout.curRow - compStart);
         const inputCol = Math.min(cols, 2 + displayWidth(promptPrefix) + curColVis + 1);
         out.push(`\x1b[${inputRow};${inputCol}H`, ansi.showCur);
 
@@ -1188,7 +1206,8 @@ class KovenceTUI {
             if (key.name === "backspace") {
                 if (sState.editing.cursor > 0) {
                     const prev = prevGraphemeBoundary(sState.editing.buf, sState.editing.cursor);
-                    sState.editing.buf = sState.editing.buf.slice(0, prev) + sState.editing.buf.slice(sState.editing.cursor);
+                    sState.editing.buf =
+                        sState.editing.buf.slice(0, prev) + sState.editing.buf.slice(sState.editing.cursor);
                     sState.editing.cursor = prev;
                     sState.editError = "";
                     this.scheduleRender();

@@ -6,14 +6,8 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-const {
-    resolvePaths,
-    migrateLegacyAiHarness,
-    ensureStorageDirs,
-} = require("../src/config/paths");
-const {
-    parseSettingValue,
-} = require("../src/settings/schema");
+const { resolvePaths, migrateLegacyAiHarness, ensureStorageDirs } = require("../src/config/paths");
+const { parseSettingValue } = require("../src/settings/schema");
 const {
     loadPersistedSettings,
     savePersistedSettings,
@@ -34,15 +28,8 @@ const {
     loadGlobalMemoryEntries,
     MAX_GLOBAL_ITEMS,
 } = require("../src/config/memory");
-const {
-    addPermissionRule,
-    removePermissionRuleByIndex,
-} = require("../src/permissions/store");
-const {
-    evaluatePermission,
-    buildSuggestedRules,
-    isReadOnlyShellCommand,
-} = require("../src/permissions/engine");
+const { addPermissionRule, removePermissionRuleByIndex } = require("../src/permissions/store");
+const { evaluatePermission, buildSuggestedRules, isReadOnlyShellCommand } = require("../src/permissions/engine");
 
 function makeTempEnv() {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "kovence-test-"));

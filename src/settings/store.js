@@ -1,17 +1,7 @@
 "use strict";
 
-const {
-    ensureStorageDirs,
-    readJsonSafe,
-    atomicWriteJson,
-    resolvePaths,
-} = require("../config/paths");
-const {
-    DEFAULT_SETTINGS,
-    PERSISTABLE_KEYS,
-    SCHEMA_BY_KEY,
-    parseSettingValue,
-} = require("./schema");
+const { ensureStorageDirs, readJsonSafe, atomicWriteJson, resolvePaths } = require("../config/paths");
+const { DEFAULT_SETTINGS, PERSISTABLE_KEYS, SCHEMA_BY_KEY, parseSettingValue } = require("./schema");
 
 /**
  * Normalize loaded settings object against schema defaults without introducing runtime-only keys.
@@ -102,15 +92,15 @@ function resolveEffectiveSettings(persisted, runtimeOverrides = {}) {
     }
     if (runtimeOverrides.cliMode) {
         const parsed = parseSettingValue("agentMode", runtimeOverrides.cliMode);
-        if (parsed.ok) effective.agentMode = parsed.value;
+        if (parsed.ok) effective.agentMode = String(parsed.value);
     }
     if (runtimeOverrides.sessionAgentMode) {
         const parsed = parseSettingValue("agentMode", runtimeOverrides.sessionAgentMode);
-        if (parsed.ok) effective.agentMode = parsed.value;
+        if (parsed.ok) effective.agentMode = String(parsed.value);
     }
     if (runtimeOverrides.sessionToolPermission) {
         const parsed = parseSettingValue("toolPermission", runtimeOverrides.sessionToolPermission);
-        if (parsed.ok) effective.toolPermission = parsed.value;
+        if (parsed.ok) effective.toolPermission = String(parsed.value);
     }
     if (runtimeOverrides.cliProvider) {
         effective.provider = String(runtimeOverrides.cliProvider).trim();

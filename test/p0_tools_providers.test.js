@@ -99,7 +99,9 @@ test("B18: SSRF protection blocks loopback/private/metadata IPs and htmlToMarkdo
     await assert.rejects(() => assertSafePublicUrl("http://10.0.0.5/"), /SSRF|private/i);
     await assert.rejects(() => assertSafePublicUrl("file:///etc/passwd"), /protocol/i);
 
-    const md = htmlToMarkdown("<h1>Title</h1><script>evil()</script><p>See <a href='https://kovence.com'>docs</a>.</p>");
+    const md = htmlToMarkdown(
+        "<h1>Title</h1><script>evil()</script><p>See <a href='https://kovence.com'>docs</a>.</p>"
+    );
     assert.match(md, /# Title/);
     assert.doesNotMatch(md, /evil/);
     assert.match(md, /\[docs\]\(https:\/\/kovence\.com\)/);

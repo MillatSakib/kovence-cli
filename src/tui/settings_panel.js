@@ -1,16 +1,8 @@
 "use strict";
 
-const {
-    SETTINGS_SCHEMA,
-    parseSettingValue,
-} = require("../settings/schema");
+const { SETTINGS_SCHEMA, parseSettingValue } = require("../settings/schema");
 const { stepSettingValue } = require("../settings/store");
-const {
-    displayWidth,
-    clipToWidth,
-    wrapPlain,
-    padRight,
-} = require("./text_width");
+const { displayWidth, clipToWidth, wrapPlain, padRight } = require("./text_width");
 
 function formatSettingDisplayValue(meta, value) {
     if (meta.type === "action") return "-> open";
@@ -24,7 +16,9 @@ function formatSettingDisplayValue(meta, value) {
 }
 
 function getFilteredSettings(settings, searchQuery = "") {
-    const q = String(searchQuery || "").trim().toLowerCase();
+    const q = String(searchQuery || "")
+        .trim()
+        .toLowerCase();
     return SETTINGS_SCHEMA.filter((meta) => {
         if (!q) return true;
         return (
@@ -40,7 +34,9 @@ function getFilteredSettings(settings, searchQuery = "") {
 }
 
 function getFilteredPermissions(rules, searchQuery = "") {
-    const q = String(searchQuery || "").trim().toLowerCase();
+    const q = String(searchQuery || "")
+        .trim()
+        .toLowerCase();
     return (Array.isArray(rules) ? rules : [])
         .map((rule, idx) => ({ ...rule, displayIndex: idx + 1 }))
         .filter((rule) => {
@@ -96,7 +92,11 @@ function renderSettingsScreen({ cols, rows, settingsState, settings, ansi }) {
         const active = startIdx + r === settingsState.selIdx;
         const accentColor = ansi.accent || ansi.orange;
         const marker = active ? `${accentColor}> ` : "  ";
-        const namePart = padRight(clipToWidth(entry.meta.label, col1W), Math.min(displayWidth(entry.meta.label), col1W), col1W + 2);
+        const namePart = padRight(
+            clipToWidth(entry.meta.label, col1W),
+            Math.min(displayWidth(entry.meta.label), col1W),
+            col1W + 2
+        );
         const valMax = Math.max(8, cols - col1W - 6);
         const valText = clipToWidth(entry.displayValue, valMax);
         const nameColor = active ? `${accentColor}${ansi.bold}` : ansi.white;
@@ -126,7 +126,13 @@ function renderSettingsScreen({ cols, rows, settingsState, settings, ansi }) {
 
     // Cursor position in Search box (or edit prompt)
     if (settingsState.editing) {
-        const editCol = Math.min(cols, 3 + displayWidth(`Edit ${settingsState.editing.label}: ${settingsState.editing.buf.slice(0, settingsState.editing.cursor)}`));
+        const editCol = Math.min(
+            cols,
+            3 +
+                displayWidth(
+                    `Edit ${settingsState.editing.label}: ${settingsState.editing.buf.slice(0, settingsState.editing.cursor)}`
+                )
+        );
         out.push(`\x1b[${rows - footerRows + 1};${editCol}H`, ansi.showCur);
     } else {
         const searchCol = Math.min(cols, 3 + displayWidth(searchLabel + searchVal));
@@ -150,7 +156,9 @@ function renderPermissionsScreen({ cols, rows, permState, rules, ansi }) {
     const searchVal = permState.search || "";
     const ruleW = Math.min(28, Math.max(12, cols - 4));
 
-    out.push(`${ansi.bold}${ansi.white}Manage Permissions${ansi.reset}  ${ansi.gray}(project & global rules)${ansi.reset}\x1b[K\n`);
+    out.push(
+        `${ansi.bold}${ansi.white}Manage Permissions${ansi.reset}  ${ansi.gray}(project & global rules)${ansi.reset}\x1b[K\n`
+    );
     out.push(`\x1b[K\n`);
     out.push(`  ${ansi.gray}${searchLabel}${ansi.white}${searchVal}${ansi.reset}\x1b[K\n`);
     out.push(`  ${ansi.gray}${"─".repeat(ruleW)}${ansi.reset}\x1b[K\n`);
@@ -163,7 +171,9 @@ function renderPermissionsScreen({ cols, rows, permState, rules, ansi }) {
 
     out.push(`\x1b[K\n`);
     if (filtered.length === 0) {
-        out.push(`  ${ansi.gray}(No permission rules saved yet. Approve with [s] or [A], or use /permissions allow|deny)${ansi.reset}\x1b[K\n`);
+        out.push(
+            `  ${ansi.gray}(No permission rules saved yet. Approve with [s] or [A], or use /permissions allow|deny)${ansi.reset}\x1b[K\n`
+        );
         for (let r = 1; r < listHeight; r++) out.push(`\x1b[K\n`);
     } else {
         for (let r = 0; r < listHeight; r++) {
@@ -180,11 +190,7 @@ function renderPermissionsScreen({ cols, rows, permState, rules, ansi }) {
             const toolCol = `${rule.tool}`.padEnd(16);
             const scopeCol = `${rule.scope}:${rule.pattern || "*"}`;
             const text = clipToWidth(`${badge} ${actionCol} ${toolCol} ${scopeCol}`, Math.max(16, cols - 6));
-            const color = active
-                ? `${accentColor}${ansi.bold}`
-                : rule.action === "deny"
-                  ? ansi.red
-                  : ansi.white;
+            const color = active ? `${accentColor}${ansi.bold}` : rule.action === "deny" ? ansi.red : ansi.white;
             out.push(`${marker}${color}${text}${ansi.reset}\x1b[K\n`);
         }
     }
