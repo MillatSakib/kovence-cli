@@ -25,8 +25,46 @@ const {
     parseSettingValue,
 } = require("./src/tui/settings_panel");
 
-function copyToClipboardOsc52(text, stdout = process.stdout) {
+const { spawnSync } = require("node:child_process");
+
+/**
+ * Copy text to system clipboard.
+ * Strategy (in order):
+ *   1. wl-copy  (Wayland)
+ *   2. xclip    (X11)
+ *   3. xsel     (X11 fallback)
+ *   4. pbcopy   (macOS)
+ *   5. OSC 52   (terminal escape — only works in Kitty / iTerm2 / WezTerm)
+ */
+function copyToClipboard(text, stdout = process.stdout) {
     if (!text) return false;
+
+    // Try system clipboard tools silently (no shell, no PATH-injection risk).
+    const candidates = [];
+    if (process.env.WAYLAND_DISPLAY) {
+        candidates.push({ cmd: "wl-copy", args: [] });
+    }
+    if (process.env.DISPLAY) {
+        candidates.push({ cmd: "xclip", args: ["-selection", "clipboard"] });
+        candidates.push({ cmd: "xsel", args: ["--clipboard", "--input"] });
+    }
+    candidates.push({ cmd: "pbcopy", args: [] }); // macOS
+
+    for (const { cmd, args } of candidates) {
+        try {
+            const result = spawnSync(cmd, args, {
+                input: text,
+                encoding: "utf8",
+                stdio: ["pipe", "ignore", "ignore"],
+                timeout: 1000,
+            });
+            if (result.status === 0) return true;
+        } catch {
+            // Not found or failed — try next.
+        }
+    }
+
+    // OSC 52 fallback (terminal must support it).
     const b64 = Buffer.from(text, "utf8").toString("base64");
     stdout.write(`\x1b]52;c;${b64}\x07`);
     return true;
@@ -266,7 +304,7 @@ class KovenceTUI {
             this.flashNotice("No AI response to copy yet");
             return false;
         }
-        copyToClipboardOsc52(lastAi.text, this.stdout);
+        copyToClipboard(lastAi.text, this.stdout);
         this.flashNotice(`Copied last response (${lastAi.text.length} chars)`);
         return true;
     }
@@ -392,7 +430,7 @@ class KovenceTUI {
             }
             const text = this.extractSelectedText();
             if (text) {
-                copyToClipboardOsc52(text, this.stdout);
+                copyToClipboard(text, this.stdout);
                 this.flashNotice(`Copied ${text.length} chars to clipboard`);
             }
             this.scheduleRender();
