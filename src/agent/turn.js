@@ -555,7 +555,11 @@ async function runAgentTurn(state, userText, sink, options = {}) {
             .slice(0, 60);
         if (cleanTitle) {
             state.session.title = cleanTitle;
-            if (/^session-\d{8}-\d{6}-[a-z0-9]+$/i.test(state.session.id) && state.paths) {
+            // Match any auto-generated session ID pattern:
+            //   compact:  session-20261119-102809-6a3
+            //   iso-like: session-2026-11-19-10-28-09-6a3
+            const isAutoId = /^session-[\d][\d-]{6,}-[a-z0-9]{2,8}$/i.test(state.session.id);
+            if (isAutoId && state.paths) {
                 const nextId = suggestSessionIdFromPrompt(userText, state.paths);
                 if (state.noSession) {
                     state.session.id = nextId;
