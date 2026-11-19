@@ -45,8 +45,10 @@ function resolvePaths(options = {}) {
         projectRoot,
         globalDir,
         projectDir,
-        sessionsDir: path.join(projectDir, "sessions"),
-        checkpointsDir: path.join(projectDir, "checkpoints"),
+        // Sessions and checkpoints are always global so data never scatters
+        // across different working directories.
+        sessionsDir: path.join(globalDir, "sessions"),
+        checkpointsDir: path.join(globalDir, "checkpoints"),
         commandsDir: path.join(projectDir, "commands"),
         settingsFile: path.join(globalDir, "settings.json"),
         providersFile: path.join(globalDir, "providers.json"),
@@ -55,7 +57,7 @@ function resolvePaths(options = {}) {
         inputHistoryFile: path.join(globalDir, "input_history.json"),
         projectMemoryFile: path.join(projectDir, "project_memory.json"),
         projectPermissionsFile: path.join(projectDir, "permissions.json"),
-        migrationMarkerFile: path.join(projectDir, ".migrated_from_ai_harness"),
+        migrationMarkerFile: path.join(globalDir, ".migrated_from_ai_harness"),
     };
 }
 
@@ -85,8 +87,10 @@ function ensureGitInfoExclude(projectRoot) {
  */
 function ensureStorageDirs(paths) {
     fs.mkdirSync(paths.globalDir, { recursive: true, mode: 0o700 });
-    fs.mkdirSync(paths.projectDir, { recursive: true });
     fs.mkdirSync(paths.sessionsDir, { recursive: true });
+    fs.mkdirSync(paths.checkpointsDir, { recursive: true });
+    // Only create projectDir when it already exists (avoid polluting random dirs).
+    // Commands dir is project-local and opt-in.
     ensureGitInfoExclude(paths.projectRoot);
 }
 

@@ -166,6 +166,7 @@ async function runDoctor(paths, envFallback) {
     });
     checks.push({ name: "sudo", ok: hasBin("sudo"), detail: hasBin("sudo") ? "installed" : "missing" });
     checks.push({ name: "Global config dir", ok: true, detail: paths.globalDir });
+    checks.push({ name: "Sessions dir", ok: true, detail: paths.sessionsDir });
     checks.push({ name: "Project .kovence dir", ok: true, detail: paths.projectDir });
 
     const provStore = loadProviders(envFallback, paths);
