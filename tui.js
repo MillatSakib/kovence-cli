@@ -76,7 +76,7 @@ function styleInlineMarkdown(line, ansi) {
         .replace(/\*\*([^*]+)\*\*/g, `${ansi.bold}${ansi.amber}$1${ansi.reset}${ansi.white}`);
 }
 
-function formatAssistantLines(text, innerW, ansi, isStreaming = false) {
+function formatAssistantLines(text, innerW, ansi, isStreaming = false, animTick = 0) {
     const out = [];
     const rawLines = String(text || "").split(/\r?\n/);
     let inCode = false;
@@ -114,10 +114,16 @@ function formatAssistantLines(text, innerW, ansi, isStreaming = false) {
     }
 
     if (isStreaming) {
+        // Animated braille spinner — 6 frames cycling every render tick.
+        const SPIN = ["⠇", "⠋", "⠙", "⠸", "⠴", "⠦"];
+        const dot = SPIN[animTick % SPIN.length];
         if (inCode) {
-            out.push(`  ${ansi.gray}│ ${ansi.amber}${ansi.dim}writing... ▌${ansi.reset}`);
+            out.push(`  ${ansi.gray}│ ${ansi.amber}${ansi.dim}${dot} writing...${ansi.reset}`);
         } else if (!text || text.endsWith("\n")) {
-            out.push(`  ${ansi.orange}┃ ${ansi.amber}${ansi.dim}writing... ▌${ansi.reset}`);
+            out.push(`  ${ansi.orange}┃ ${ansi.amber}${ansi.dim}${dot} writing...${ansi.reset}`);
+        } else {
+            // Mid-line: append animated dot inline
+            out[out.length - 1] = (out[out.length - 1] || "") + ` ${ansi.dim}${dot}${ansi.reset}`;
         }
     }
 
@@ -571,12 +577,12 @@ class KovenceTUI {
         // Start animation timer for spinner/dot animation.
         this._animTimer = setInterval(() => {
             this.animTick++;
-            // Only re-render if there is an active writing block.
-            const hasActive = this.blocks.some((b) => b.writeStats && !b.writeStats.done);
+            // Re-render if there is an active write block OR a streaming assistant block.
+            const hasActive = this.blocks.some((b) => (b.writeStats && !b.writeStats.done) || b._streaming);
             if (hasActive) {
-                // Invalidate cache for writing blocks so dots re-render.
+                // Invalidate cache for all animated blocks so spinner dots re-render.
                 for (const b of this.blocks) {
-                    if (b.writeStats && !b.writeStats.done) {
+                    if ((b.writeStats && !b.writeStats.done) || b._streaming) {
                         b._ver = (b._ver || 0) + 1;
                         b._cache = null;
                     }
@@ -756,7 +762,9 @@ class KovenceTUI {
                         blockLines.push("");
                     } else if (b.kind === "assistant") {
                         blockLines.push(`  ${ansi.orange}${ansi.bold}◆ KOVENCE CLI${ansi.reset}`);
-                        blockLines.push(...formatAssistantLines(b.text, innerW, ansi, Boolean(b._streaming)));
+                        blockLines.push(
+                            ...formatAssistantLines(b.text, innerW, ansi, Boolean(b._streaming), this.animTick)
+                        );
                     } else if (b.kind === "thinking") {
                         blockLines.push(`  ${ansi.orange}${ansi.bold}◆ KOVENCE CLI${ansi.reset}`);
                         for (const wl of wrapped) {
