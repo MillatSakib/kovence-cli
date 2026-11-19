@@ -1,0 +1,5 @@
+.env
+node_modules
+.ai_sessions
+.ai_harness
+.kovence

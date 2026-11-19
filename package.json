@@ -1,0 +1,28 @@
+{
+  "name": "kovence-cli",
+  "version": "1.0.0",
+  "description": "Kovence CLI — Fast zero-dependency multi-step AI coding-agent CLI harness",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "bin": {
+    "kovence-cli": "./nd.js",
+    "kovence": "./nd.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check nd.js store.js ui.js tools.js providers.js tui.js src/config/paths.js src/config/providers.js src/config/memory.js src/config/sessions.js src/config/model_registry.js src/settings/schema.js src/settings/store.js src/permissions/store.js src/permissions/engine.js src/tools/fs_walk.js src/tools/exec.js src/tools/sudo.js src/tools/net.js src/tools/download.js src/tools/checkpoints.js src/tools/patch_git.js src/tools/tasks.js src/agent/history.js src/agent/project_context.js src/agent/resilience.js src/agent/turn.js src/tui/text_width.js src/tui/themes.js src/tui/settings_panel.js src/cli/args.js src/cli/sinks.js src/commands/handlers.js"
+  },
+  "files": [
+    "nd.js",
+    "store.js",
+    "ui.js",
+    "tools.js",
+    "providers.js",
+    "tui.js",
+    "src/",
+    "README.md",
+    "CHANGELOG.md"
+  ]
+}
