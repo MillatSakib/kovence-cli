@@ -29,15 +29,32 @@ function findProjectRoot(cwd = process.cwd()) {
 }
 
 /**
- * Resolve all global (~/.config/kovence) and per-project (<project>/.kovence) paths.
+ * Resolve the global config directory in a cross-platform way.
+ *
+ * Priority (highest to lowest):
+ *   1. KOVENCE_CONFIG_DIR env var (always wins, any OS)
+ *   2. XDG_CONFIG_HOME/kovence          (Linux/macOS with XDG override)
+ *   3. %APPDATA%\kovence                (Windows — C:\Users\<user>\AppData\Roaming\kovence)
+ *   4. ~/.config/kovence                (Linux/macOS default)
+ */
+function resolveGlobalConfigDir() {
+    if (process.env.XDG_CONFIG_HOME) {
+        return path.join(process.env.XDG_CONFIG_HOME, "kovence");
+    }
+    if (process.platform === "win32") {
+        const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+        return path.join(appData, "kovence");
+    }
+    return path.join(os.homedir(), ".config", "kovence");
+}
+
+/**
+ * Resolve all global and per-project paths.
  */
 function resolvePaths(options = {}) {
     const cwd = path.resolve(options.cwd || process.cwd());
     const projectRoot = path.resolve(options.projectRoot || findProjectRoot(cwd));
-    const xdgConfig = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
-    const globalDir = path.resolve(
-        options.globalDir || process.env.KOVENCE_CONFIG_DIR || path.join(xdgConfig, "kovence")
-    );
+    const globalDir = path.resolve(options.globalDir || process.env.KOVENCE_CONFIG_DIR || resolveGlobalConfigDir());
     const projectDir = path.resolve(options.projectDir || path.join(projectRoot, ".kovence"));
 
     return {
