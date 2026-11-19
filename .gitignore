@@ -6,6 +6,6 @@ node_modules/
 *.AppImage
 .Rhistory
 coverage/
-website/.next/
-website/out/
+**/.next/
+**/out/
 website/node_modules/
