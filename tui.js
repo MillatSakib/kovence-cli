@@ -30,11 +30,12 @@ const { spawnSync } = require("node:child_process");
 /**
  * Copy text to system clipboard.
  * Strategy (in order):
- *   1. wl-copy  (Wayland)
- *   2. xclip    (X11)
- *   3. xsel     (X11 fallback)
- *   4. pbcopy   (macOS)
- *   5. OSC 52   (terminal escape — only works in Kitty / iTerm2 / WezTerm)
+ *   1. wl-copy        (Wayland — wl-clipboard package)
+ *   2. xclip          (X11 — xclip package)
+ *   3. xsel           (X11 — xsel package)
+ *   4. pbcopy         (macOS)
+ *   5. python3+tkinter (X11/Wayland, usually pre-installed on Ubuntu/Arch)
+ *   6. OSC 52         (terminal escape — Kitty / iTerm2 / WezTerm only)
  */
 function copyToClipboard(text, stdout = process.stdout) {
     if (!text) return false;
@@ -61,6 +62,32 @@ function copyToClipboard(text, stdout = process.stdout) {
             if (result.status === 0) return true;
         } catch {
             // Not found or failed — try next.
+        }
+    }
+
+    // Python3 + tkinter fallback (pre-installed on most Linux distros).
+    // Works on both X11 and Wayland (via XWayland).
+    if (process.env.DISPLAY || process.env.WAYLAND_DISPLAY) {
+        const pyScript = [
+            "import sys, tkinter as tk",
+            "root = tk.Tk()",
+            "root.withdraw()",
+            "root.clipboard_clear()",
+            "root.clipboard_append(sys.stdin.read())",
+            "root.update()",
+            "root.after(500, root.destroy)",
+            "root.mainloop()",
+        ].join(";");
+        try {
+            const result = spawnSync("python3", ["-c", pyScript], {
+                input: text,
+                encoding: "utf8",
+                stdio: ["pipe", "ignore", "ignore"],
+                timeout: 2000,
+            });
+            if (result.status === 0) return true;
+        } catch {
+            // python3 not available or tkinter missing.
         }
     }
 
