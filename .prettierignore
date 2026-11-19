@@ -2,6 +2,7 @@ node_modules/
 .kovence/
 .ai_harness/
 coverage/
+website/
 package-lock.json
 docs/
 *.md
