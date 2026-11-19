@@ -3,6 +3,18 @@
     "version": "1.0.0",
     "description": "Kovence CLI — Fast zero-dependency multi-step AI coding-agent CLI harness",
     "license": "MIT",
+    "homepage": "https://kovence.com",
+    "keywords": [
+        "cli",
+        "ai",
+        "coding-agent",
+        "llm",
+        "tui",
+        "openai",
+        "anthropic",
+        "kovence"
+    ],
+    "main": "nd.js",
     "engines": {
         "node": ">=20.12.0"
     },
@@ -10,13 +22,17 @@
         "kovence-cli": "./nd.js",
         "kovence": "./nd.js"
     },
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
         "test": "node --test",
         "test:coverage": "node --test --experimental-test-coverage",
         "check": "node scripts/check.js",
         "lint": "eslint .",
         "format:check": "prettier --check .",
-        "typecheck": "tsc --noEmit --allowJs --checkJs"
+        "typecheck": "tsc --noEmit --allowJs --checkJs",
+        "prepublishOnly": "npm run check && npm run lint && npm run typecheck && npm run format:check && npm test"
     },
     "files": [
         "nd.js",
@@ -27,7 +43,9 @@
         "tui.js",
         "src/",
         "README.md",
-        "CHANGELOG.md"
+        "CHANGELOG.md",
+        "LICENSE",
+        "SECURITY.md"
     ],
     "devDependencies": {
         "@types/node": "^26.6.6",
