@@ -6,7 +6,7 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
 const ROOT = path.resolve(__dirname, "..");
-const IGNORE_DIRS = new Set(["node_modules", ".git", ".kovence", ".ai_harness", "coverage", "website"]);
+const IGNORE_DIRS = new Set(["node_modules", ".git", ".kovence", ".ai_harness", "coverage", "website", ".next", "out"]);
 
 function collectJsFiles(dir, out = []) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

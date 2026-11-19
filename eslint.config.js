@@ -2,7 +2,17 @@
 
 module.exports = [
     {
-        ignores: ["node_modules/**", ".kovence/**", ".ai_harness/**", "coverage/**", "website/**"],
+        ignores: [
+            "node_modules/**",
+            ".kovence/**",
+            ".ai_harness/**",
+            "coverage/**",
+            "website/**",
+            ".next/**",
+            "**/.next/**",
+            "out/**",
+            "**/out/**",
+        ],
     },
     {
         files: ["**/*.js"],

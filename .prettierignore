@@ -3,6 +3,10 @@ node_modules/
 .ai_harness/
 coverage/
 website/
+.next/
+**/.next/
+out/
+**/out/
 package-lock.json
 docs/
 *.md
