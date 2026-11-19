@@ -773,6 +773,9 @@ class KovenceTUI {
                     } else if (b.kind === "tool") {
                         if (b.collapsible) {
                             const ws = b.writeStats;
+                            // Show write stats always (even after done) as a summary.
+                            // isActiveWrite controls the spinner animation only.
+                            const hasWriteStats = Boolean(ws);
                             const isActiveWrite = ws && !ws.done;
 
                             // --- Animated write indicator dots ---
@@ -782,7 +785,7 @@ class KovenceTUI {
 
                             const arrow = b.expanded ? "▾" : "▸";
                             // For active writes, show expand toggle; for others, show generic hint.
-                            const hint = isActiveWrite
+                            const hint = hasWriteStats
                                 ? b.expanded
                                     ? " (click to collapse)"
                                     : " ▸ expand for file preview"
@@ -802,13 +805,14 @@ class KovenceTUI {
                             }
                             const detailW = Math.max(12, innerW - 6);
 
-                            if (isActiveWrite) {
-                                // --- Stats line: animated dot + tokens approx + lines + speed ---
+                            if (hasWriteStats) {
+                                // --- Stats line: spinner (if active) or ✓ (if done) + lines + tokens + speed ---
                                 const elapsedSec = Math.max(0.1, (Date.now() - ws.startTime) / 1000);
                                 // Rough token estimate: ~4 chars per token.
                                 const tokEst = Math.round(ws.totalChars / 4);
                                 const tokSec = Math.round(tokEst / elapsedSec);
-                                const statsLine = `${dot} ${ws.totalLines} lines · ~${tokEst} tokens · ${tokSec} tok/s`;
+                                const statusIcon = isActiveWrite ? dot : "✓";
+                                const statsLine = `${statusIcon} ${ws.totalLines} lines · ~${tokEst} tokens · ${tokSec} tok/s`;
                                 blockLines.push(
                                     `  ${ansi.gray}│    ${ansi.amber}${clipToWidth(statsLine, detailW)}${ansi.reset}`
                                 );
@@ -834,7 +838,7 @@ class KovenceTUI {
                                         }
                                     } else {
                                         blockLines.push(
-                                            `  ${ansi.gray}│    ${ansi.dim}${ansi.gray}${clipToWidth("… preparing …", detailW)}${ansi.reset}`
+                                            `  ${ansi.gray}│    ${ansi.dim}${ansi.gray}${clipToWidth("… no content preview …", detailW)}${ansi.reset}`
                                         );
                                     }
                                 }
