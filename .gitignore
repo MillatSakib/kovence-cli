@@ -1,5 +1,8 @@
 .env
-node_modules
-.ai_sessions
-.ai_harness
-.kovence
+node_modules/
+.ai_sessions/
+.ai_harness/
+.kovence/
+*.AppImage
+.Rhistory
+coverage/
