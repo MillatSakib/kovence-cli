@@ -276,16 +276,73 @@ function createTuiSink(tui, state) {
         startToolCall(label, { collapsible = true, expanded = false, toolIdx = null } = {}) {
             const isWrite = /write_file|edit_file|multi_edit|apply_patch/.test(label);
             const isRead = /read_file|glob_files|grep_files/.test(label);
-            const block = tui.addBlock("tool", label, {
-                collapsible,
-                expanded,
-                details: [],
-                statusLine: isWrite ? "writing..." : isRead ? "reading..." : "running...",
-            });
+
+            // If preRegisterWriteBlock already created a block for this tool, reuse it
+            const preReg = toolIdx !== null ? streamWriteBlocks.get(toolIdx) : null;
+            const block = preReg?.preRegistered
+                ? preReg.block
+                : tui.addBlock("tool", label, {
+                      collapsible,
+                      expanded,
+                      details: [],
+                      statusLine: isWrite ? "writing..." : isRead ? "reading..." : "running...",
+                  });
+            // Update label on reused block
+            if (preReg?.preRegistered) {
+                block.text = label;
+                block._cache = null;
+            }
+
             const details = [];
             let lastUpdateAt = 0;
             if (toolIdx !== null && isWrite) {
                 streamWriteBlocks.set(toolIdx, { block, toolName: label });
+                // Replay any chunks that arrived before this block was created
+                const pending = streamWriteBlocks.get(`pending-${toolIdx}`);
+                if (pending && pending.chunks.length) {
+                    streamWriteBlocks.delete(`pending-${toolIdx}`);
+                    for (const ch of pending.chunks) {
+                        // Inline the chunk processing (same as onWriteStreamChunk but block is known)
+                        if (!block.writeStats) {
+                            block.writeStats = {
+                                filePath: pending.path || "",
+                                dir: pending.path
+                                    ? pending.path.replace(/\\/g, "/").split("/").slice(0, -1).join("/") || "."
+                                    : "",
+                                totalLines: 0,
+                                totalChars: 0,
+                                startTime: Date.now(),
+                                previewLines: [],
+                                done: false,
+                            };
+                        }
+                        const ws = block.writeStats;
+                        let decoded;
+                        try {
+                            decoded = JSON.parse('"' + ch.replace(/"/g, '\\"') + '"');
+                        } catch {
+                            decoded = ch;
+                        }
+                        ws.totalChars += decoded.length;
+                        const newLines = decoded.split(/\r?\n/);
+                        if (ws.previewLines.length > 0 && !decoded.startsWith("\n")) {
+                            ws.previewLines[ws.previewLines.length - 1] += newLines[0];
+                            for (let i = 1; i < newLines.length; i++) {
+                                if (newLines[i].trim()) ws.previewLines.push(newLines[i]);
+                            }
+                        } else {
+                            for (const l of newLines) {
+                                if (l.trim()) ws.previewLines.push(l);
+                            }
+                        }
+                        ws.previewLines = ws.previewLines.filter((l) => l.trim()).slice(-5);
+                        const nlCount = (decoded.match(/\n/g) || []).length;
+                        ws.totalLines += nlCount;
+                    }
+                    block._ver = (block._ver || 0) + 1;
+                    block._cache = null;
+                    tui.scheduleRender();
+                }
             }
 
             return {
@@ -379,6 +436,39 @@ function createTuiSink(tui, state) {
                     tui.setBlockDetails(block, [...details], summaryLine);
                 },
             };
+        },
+        /**
+         * Called by providers.js as soon as the file path is known during LLM streaming.
+         * Creates the TUI block immediately so live stats & preview can appear DURING generation.
+         * @param {number} toolIdx  - provider toolMap index
+         * @param {string} toolName - e.g. "write_file"
+         * @param {string} filePath - destination file path
+         */
+        preRegisterWriteBlock(toolIdx, toolName, filePath) {
+            // Don't create a duplicate if startToolCall already ran
+            if (streamWriteBlocks.has(toolIdx)) return;
+            const fname = filePath ? filePath.replace(/\\/g, "/").split("/").pop() : "file";
+            const label = `⚙ ${toolName}(${fname})`;
+            const dir = filePath ? filePath.replace(/\\/g, "/").split("/").slice(0, -1).join("/") || "." : "";
+            const block = tui.addBlock("tool", label, {
+                collapsible: true,
+                expanded: false,
+                details: [],
+                statusLine: "writing...",
+            });
+            block.writeStats = {
+                filePath: String(filePath || ""),
+                dir: String(dir),
+                totalLines: 0,
+                totalChars: 0,
+                startTime: Date.now(),
+                previewLines: [],
+                done: false,
+            };
+            streamWriteBlocks.set(toolIdx, { block, toolName, preRegistered: true });
+            block._ver = (block._ver || 0) + 1;
+            block._cache = null;
+            tui.scheduleRender();
         },
         /**
          * Called by providers.js for each chunk of content/replacement argument while the LLM streams.

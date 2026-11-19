@@ -463,12 +463,15 @@ async function streamProviderTurn({
             // Extract file path once so sink knows where to write
             if (!st.path) {
                 const pm = st.buf.match(/"path"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-                if (pm)
+                if (pm) {
                     st.path = pm[1]
                         .replace(/\\n/g, "\n")
                         .replace(/\\t/g, "\t")
                         .replace(/\\\\/g, "\\")
                         .replace(/\\"/g, '"');
+                    // Pre-register write block so TUI shows live spinner + path.
+                    sink.preRegisterWriteBlock?.(idx, tName, st.path);
+                }
             }
             // Look for content/replacement key start
             const km = st.buf.match(/"(?:content|replacement)"\s*:\s*"/);
