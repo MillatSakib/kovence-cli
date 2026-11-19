@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS = {
     notifications: true,
     colorScheme: "amber",
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
+    chatHistoryRetentionDays: 30,
 };
 
 /**
@@ -195,6 +196,15 @@ const SETTINGS_SCHEMA = [
         description: "Base system instructions injected at the start of every request (press Enter to edit).",
     },
     {
+        key: "chatHistoryRetentionDays",
+        label: "Chat History Retention (Days)",
+        type: "nullableInteger",
+        min: 0,
+        max: 3650,
+        description:
+            "Auto-delete sessions older than N days on startup (0 = never delete). Default: 30. Set to 'null' to disable.",
+    },
+    {
         key: "managePermissions",
         label: "Manage Permissions",
         type: "action",
@@ -227,6 +237,9 @@ const KEY_ALIASES = {
     show_active_tasks: "showActiveTasks",
     color_scheme: "colorScheme",
     system_prompt: "systemPrompt",
+    chat_history_retention: "chatHistoryRetentionDays",
+    chat_history_retention_days: "chatHistoryRetentionDays",
+    retention_days: "chatHistoryRetentionDays",
 };
 
 const PERSISTABLE_KEYS = new Set(Object.keys(DEFAULT_SETTINGS));

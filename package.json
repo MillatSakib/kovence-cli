@@ -1,6 +1,6 @@
 {
     "name": "kovence-cli",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Kovence CLI — Fast zero-dependency multi-step AI coding-agent CLI harness",
     "license": "MIT",
     "homepage": "https://kovence-cli.kovence.com",

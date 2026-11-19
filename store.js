@@ -88,6 +88,8 @@ module.exports = {
     loadInputHistory: (paths = getDefaultPaths()) => sessionsMod.loadInputHistory(paths),
     saveInputHistory: (items, paths = getDefaultPaths()) => sessionsMod.saveInputHistory(items, paths),
     deleteSession: (id, paths = getDefaultPaths()) => sessionsMod.deleteSession(id, paths),
+    cleanupOldSessions: (retentionDays, paths = getDefaultPaths(), activeSessionId = "") =>
+        sessionsMod.cleanupOldSessions(retentionDays, paths, activeSessionId),
 
     // Permissions
     loadPermissionRules: permStoreMod.loadPermissionRules,

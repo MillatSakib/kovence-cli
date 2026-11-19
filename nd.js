@@ -40,6 +40,7 @@ const {
     replaySessionHistory,
 } = require("./src/commands/handlers");
 const { runAgentTurn, compactSession, waitForMemorySync } = require("./src/agent/turn");
+const { cleanupOldSessions } = require("./src/config/sessions");
 
 function makeAutoSessionId() {
     const d = new Date();
@@ -387,7 +388,7 @@ async function runTuiRepl(state) {
         },
         async onNewSession() {
             const rawName = (await tui.askModal("New session name (blank = auto): ", false)).trim();
-            const id = rawName || `session-${new Date().toISOString().slice(11, 19).replace(/:/g, "")}`;
+            const id = rawName || makeAutoSessionId();
             state.activePrompt = "";
             state.queue.length = 0;
             state.activeAbort?.abort();
@@ -617,6 +618,14 @@ async function main() {
     }
     session.model = model;
     if (!opts.noSession) saveSession(session, paths);
+
+    // Run session retention cleanup on startup (non-fatal, skip active session).
+    try {
+        const retentionDays = persistedSettings.chatHistoryRetentionDays;
+        cleanupOldSessions(retentionDays, paths, session.id);
+    } catch {
+        // Non-fatal: cleanup errors must never crash startup.
+    }
 
     const state = {
         paths,

@@ -17,6 +17,7 @@ const {
     suggestSessionIdFromPrompt,
     loadInputHistory,
     saveInputHistory,
+    cleanupOldSessions,
 } = require("../store");
 const { handleSlash } = require("../src/commands/handlers");
 const { expandFileMentions } = require("../src/agent/turn");
@@ -200,6 +201,47 @@ test("Sessions: groupSessionsByDate omits empty dates, suggestSessionIdFromPromp
         assert.equal(tui.picker.selIdx, 2);
         tui._handlePickerKey("", { name: "up" });
         assert.equal(tui.picker.selIdx, 0);
+    } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+    }
+});
+
+test("cleanupOldSessions deletes old sessions and keeps recent ones (chatHistoryRetentionDays)", () => {
+    const { tmp, paths } = makeTempPaths();
+    try {
+        fs.mkdirSync(paths.sessionsDir, { recursive: true });
+
+        const sessionFile = (id) => require("node:path").join(paths.sessionsDir, `${id}.json`);
+        const writeSessionJson = (id, updatedAt) => {
+            fs.writeFileSync(sessionFile(id), JSON.stringify({ id, updatedAt, createdAt: updatedAt, history: [] }));
+        };
+
+        // Write an OLD session (61 days ago).
+        const oldDate = new Date(Date.now() - 61 * 24 * 60 * 60 * 1000).toISOString();
+        writeSessionJson("old-session", oldDate);
+
+        // Write a RECENT session (5 days ago).
+        const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+        writeSessionJson("recent-session", recentDate);
+
+        // Write the ACTIVE session (old but should be protected).
+        writeSessionJson("active-session", oldDate);
+
+        // Cleanup with 30-day retention, protecting the active session.
+        const deleted = cleanupOldSessions(30, paths, "active-session");
+
+        assert.equal(deleted, 1, "Should delete exactly 1 old session");
+        assert.equal(fs.existsSync(sessionFile("old-session")), false, "old-session.json should be deleted");
+        assert.equal(fs.existsSync(sessionFile("recent-session")), true, "recent-session.json should be kept");
+        assert.equal(fs.existsSync(sessionFile("active-session")), true, "active-session.json should be protected");
+
+        // Calling with retentionDays=0 should be a no-op.
+        const deletedZero = cleanupOldSessions(0, paths, "");
+        assert.equal(deletedZero, 0, "retentionDays=0 should delete nothing");
+
+        // Calling with null/undefined should be a no-op.
+        assert.equal(cleanupOldSessions(null, paths, ""), 0);
+        assert.equal(cleanupOldSessions(undefined, paths, ""), 0);
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }

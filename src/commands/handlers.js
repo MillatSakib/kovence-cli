@@ -37,6 +37,14 @@ const { generateProjectInitDoc } = require("../agent/project_context");
 const { undoLastCheckpoint } = require("../tools/checkpoints");
 const { getHelpText } = require("../cli/args");
 
+function makeAutoSessionId() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    const rand = Math.random().toString(36).slice(2, 5);
+    return `session-${stamp}-${rand}`;
+}
+
 function getEnvFallback() {
     return {
         baseUrl: String(process.env.LITELLM_BASE_URL || "").replace(/\/+$/, ""),
@@ -630,7 +638,7 @@ async function openSessionPicker(state, tui, sink, waitForMemorySync) {
         if (res.action === "select") {
             if (res.item.type === "new") {
                 const rawName = (await tui.askModal("New session name (blank = auto): ", false)).trim();
-                const id = rawName || `session-${new Date().toISOString().slice(11, 19).replace(/:/g, "")}`;
+                const id = rawName || makeAutoSessionId();
                 await switchToSession(state, id, true, sink, waitForMemorySync);
                 return;
             }

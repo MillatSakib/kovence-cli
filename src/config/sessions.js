@@ -157,6 +157,40 @@ function deleteSession(id, paths = resolvePaths()) {
     return true;
 }
 
+/**
+ * Delete session files whose `updatedAt` (or `createdAt`) timestamp is older than
+ * `retentionDays` days.  Pass 0 (or null/undefined) to skip cleanup entirely.
+ * Returns the number of sessions deleted.
+ */
+function cleanupOldSessions(retentionDays, paths = resolvePaths(), activeSessionId = "") {
+    const days = Number(retentionDays);
+    if (!Number.isFinite(days) || days <= 0) return 0;
+    ensureStorageDirs(paths);
+    if (!fs.existsSync(paths.sessionsDir)) return 0;
+    const cutoffMs = Date.now() - days * 24 * 60 * 60 * 1000;
+    let deleted = 0;
+    const files = fs.readdirSync(paths.sessionsDir).filter((f) => f.endsWith(".json"));
+    for (const f of files) {
+        const id = f.replace(/\.json$/, "");
+        if (id === activeSessionId) continue; // never delete current session
+        const full = path.join(paths.sessionsDir, f);
+        try {
+            const data = readJsonSafe(full, null);
+            const stamp = data?.updatedAt || data?.createdAt || "";
+            if (!stamp) continue;
+            const ts = new Date(stamp).getTime();
+            if (!Number.isFinite(ts)) continue;
+            if (ts < cutoffMs) {
+                fs.unlinkSync(full);
+                deleted++;
+            }
+        } catch {
+            // Non-fatal: skip unreadable file.
+        }
+    }
+    return deleted;
+}
+
 function forkSession(sourceSession, newId, paths = resolvePaths()) {
     const cleanNewId = safeId(newId);
     if (!cleanNewId) throw new Error("Invalid fork session name.");
@@ -196,6 +230,7 @@ module.exports = {
     groupSessionsByDate,
     suggestSessionIdFromPrompt,
     deleteSession,
+    cleanupOldSessions,
     loadInputHistory,
     saveInputHistory,
 };
