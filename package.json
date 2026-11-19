@@ -3,7 +3,14 @@
     "version": "1.0.0",
     "description": "Kovence CLI — Fast zero-dependency multi-step AI coding-agent CLI harness",
     "license": "MIT",
-    "homepage": "https://kovence-cli.kovence.com",
+    "homepage": "https://github.com/MillatSakib/kovence-cli#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/MillatSakib/kovence-cli.git"
+    },
+    "bugs": {
+        "url": "https://github.com/MillatSakib/kovence-cli/issues"
+    },
     "keywords": [
         "cli",
         "ai",
